@@ -1,0 +1,8 @@
+{
+  "name": "cmm-financial-site",
+  "version": "1.0.0",
+  "description": "CM&M Financial Education Consulting — booking site",
+  "dependencies": {
+    "squareup": "^40.0.0"
+  }
+}

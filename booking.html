@@ -905,7 +905,7 @@
       <div class="panel step-panel" id="step-4">
         <div class="panel-header">
           <h2>Secure Payment</h2>
-          <p>Powered by Shopify Payments — your info is encrypted and safe</p>
+          <p>Powered by Square — your card info is encrypted and never stored</p>
         </div>
         <div class="panel-body">
 
@@ -913,14 +913,6 @@
             <div class="pay-tab active" onclick="selectPayTab(this, 'card')">
               <span class="pay-icon">💳</span>
               Credit / Debit Card
-            </div>
-            <div class="pay-tab" onclick="selectPayTab(this, 'paypal')">
-              <span class="pay-icon">🅿️</span>
-              PayPal
-            </div>
-            <div class="pay-tab" onclick="selectPayTab(this, 'applepay')">
-              <span class="pay-icon">🍎</span>
-              Apple Pay
             </div>
             <div class="pay-tab" onclick="selectPayTab(this, 'zelle')">
               <div class="zelle-icon">Z</div>
@@ -934,40 +926,25 @@
             </div>
           </div>
 
-          <!-- Card Fields -->
+          <!-- Square Card Fields -->
           <div id="card-fields" class="card-fields">
-            <div class="form-group">
+            <div class="form-group" style="grid-column: 1 / -1;">
               <label class="form-label">Cardholder Name <span>*</span></label>
-              <input class="form-input" type="text" placeholder="Name on card">
+              <input class="form-input" type="text" id="cardholderName" placeholder="Name on card">
             </div>
-            <div class="form-group">
-              <label class="form-label">Card Number <span>*</span></label>
-              <input class="form-input" type="text" placeholder="1234  5678  9012  3456" maxlength="19" oninput="formatCard(this)">
+            <!-- Square mounts its secure card element here -->
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Card Details <span>*</span></label>
+              <div id="square-card-container" style="
+                padding: 14px 16px;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                background: var(--cream);
+                min-height: 52px;
+                transition: border-color 0.3s;
+              "></div>
+              <div id="square-card-errors" style="color:var(--error); font-size:13px; margin-top:6px; display:none;"></div>
             </div>
-            <div class="card-row">
-              <div class="form-group">
-                <label class="form-label">Expiry Date <span>*</span></label>
-                <input class="form-input" type="text" placeholder="MM / YY" maxlength="7" oninput="formatExpiry(this)">
-              </div>
-              <div class="form-group">
-                <label class="form-label">CVV <span>*</span></label>
-                <input class="form-input" type="text" placeholder="•••" maxlength="4">
-              </div>
-            </div>
-          </div>
-
-          <!-- PayPal -->
-          <div id="paypal-fields" style="display:none; padding: 32px; text-align:center; background:var(--cream); border-radius:16px; border:1px solid var(--border);">
-            <div style="font-size:36px; margin-bottom:12px;">🅿️</div>
-            <p style="font-size:15px; color:var(--text-body); margin-bottom:8px;">You'll be redirected to PayPal to complete your payment securely.</p>
-            <p style="font-size:13px; color:var(--text-light);">PayPal account or guest checkout available.</p>
-          </div>
-
-          <!-- Apple Pay -->
-          <div id="applepay-fields" style="display:none; padding: 32px; text-align:center; background:var(--cream); border-radius:16px; border:1px solid var(--border);">
-            <div style="font-size:36px; margin-bottom:12px;">🍎</div>
-            <p style="font-size:15px; color:var(--text-body); margin-bottom:8px;">Apple Pay will be prompted on your device to complete payment.</p>
-            <p style="font-size:13px; color:var(--text-light);">Available on Safari with Touch ID or Face ID.</p>
           </div>
 
           <!-- Zelle -->
@@ -1017,12 +994,14 @@
           </div>
 
           <div class="secure-badge">
-            256-bit SSL encryption · Shopify Payments · Zelle · Cash App · All payments secured
+            256-bit SSL encryption · Square Payments · Zelle · Cash App · All payments secured
           </div>
+
+          <div id="payment-error-msg" style="display:none; background:rgba(252,129,129,0.1); border:1px solid rgba(252,129,129,0.3); border-radius:10px; padding:14px 18px; margin-top:16px; color:#c0392b; font-size:14px;"></div>
 
           <div class="step-actions">
             <button class="btn-back" onclick="goToStep(3)">← Back</button>
-            <button class="btn-next" onclick="completeBooking()">
+            <button class="btn-next" id="pay-btn" onclick="handlePayment()">
               ✦ &nbsp;Confirm &amp; Pay
             </button>
           </div>
@@ -1085,7 +1064,7 @@
       <div class="summary-card">
         <div class="panel-body">
           <div class="trust-items">
-            <div class="trust-item"><div class="trust-item-icon">🔒</div>Secure checkout via Shopify Payments</div>
+            <div class="trust-item"><div class="trust-item-icon">🔒</div>Secure checkout via Square Payments</div>
             <div class="trust-item"><div class="trust-item-icon">📧</div>Instant email confirmation</div>
             <div class="trust-item"><div class="trust-item-icon">🕐</div>Reschedule up to 24 hrs before</div>
             <div class="trust-item"><div class="trust-item-icon">✦</div>IAP Certified Coach · Est. Gretna, LA</div>
@@ -1103,7 +1082,19 @@
   </div>
 </footer>
 
+<!-- Square Web Payments SDK -->
+<script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
 <script>
+  // ════════════════════════════════════════════════════════
+  // SQUARE CONFIG — replace with your real keys from
+  // developer.squareup.com → Applications → your app
+  // ════════════════════════════════════════════════════════
+  const SQUARE_APP_ID  = 'sandbox-sq0idb-REPLACE_WITH_YOUR_APP_ID';
+  const SQUARE_LOCATION_ID = 'REPLACE_WITH_YOUR_LOCATION_ID';
+  // For production, change the script src above to:
+  // https://web.squarecdn.com/v1/square.js
+  // and update APP_ID / LOCATION_ID to your production values
+
   // ─── STATE ───
   const state = {
     service: null,
@@ -1112,13 +1103,38 @@
     time: null,
     currentStep: 1,
     currentMonth: new Date().getMonth(),
-    currentYear: new Date().getFullYear()
+    currentYear: new Date().getFullYear(),
+    paymentMethod: 'card'
   };
 
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const TIME_SLOTS = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM'];
-  const BOOKED = ['9:30 AM','11:00 AM','2:00 PM']; // demo booked slots
+  const BOOKED = ['9:30 AM','11:00 AM','2:00 PM'];
+
+  let squareCard = null;
+
+  // ─── INIT SQUARE ───
+  async function initSquare() {
+    if (!window.Square) {
+      console.warn('Square SDK not loaded — check your App ID');
+      return;
+    }
+    try {
+      const payments = window.Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
+      squareCard = await payments.card({
+        style: {
+          '.input-container': { borderRadius: '12px', borderColor: 'rgba(200,162,82,0.2)' },
+          '.input-container.is-focus': { borderColor: '#C8A252' },
+          input: { fontFamily: "'DM Sans', sans-serif", fontSize: '15px', color: '#1A2332' },
+          'input::placeholder': { color: '#8A94A6' },
+        }
+      });
+      await squareCard.attach('#square-card-container');
+    } catch (e) {
+      console.error('Square init error:', e);
+    }
+  }
 
   // ─── SERVICE SELECTION ───
   function selectService(el, name, price) {
@@ -1127,13 +1143,13 @@
     state.service = name;
     state.price = price;
     document.getElementById('sum-service').textContent = name;
-    document.getElementById('sum-price').textContent = '$' + price;
-    document.getElementById('sum-total').textContent = '$' + price;
+    document.getElementById('sum-price').textContent = '$' + price.toLocaleString();
+    document.getElementById('sum-total').textContent = '$' + price.toLocaleString();
+    document.getElementById('pay-btn').textContent = '✦  Confirm & Pay $' + price.toLocaleString();
   }
 
   // ─── STEPS ───
   function goToStep(n) {
-    // Validate
     if (n === 2 && !state.service) { alert('Please select a service first.'); return; }
     if (n === 4 && (!document.getElementById('firstName').value || !document.getElementById('email').value || !document.getElementById('phone').value)) {
       alert('Please fill in all required fields.'); return;
@@ -1151,6 +1167,7 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (n === 2) buildCalendar();
+    if (n === 4 && !squareCard) initSquare();
   }
 
   // ─── CALENDAR ───
@@ -1159,41 +1176,28 @@
     label.textContent = MONTHS[state.currentMonth] + ' ' + state.currentYear;
     const grid = document.getElementById('cal-grid');
     grid.innerHTML = '';
-
     DAYS.forEach(d => {
       const h = document.createElement('div');
       h.className = 'cal-day-header'; h.textContent = d;
       grid.appendChild(h);
     });
-
     const firstDay = new Date(state.currentYear, state.currentMonth, 1).getDay();
     const daysInMonth = new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
     const today = new Date();
-
     for (let i = 0; i < firstDay; i++) {
-      const empty = document.createElement('div');
-      empty.className = 'cal-day empty';
-      grid.appendChild(empty);
+      const empty = document.createElement('div'); empty.className = 'cal-day empty'; grid.appendChild(empty);
     }
-
     for (let d = 1; d <= daysInMonth; d++) {
-      const cell = document.createElement('div');
-      cell.className = 'cal-day';
-      cell.textContent = d;
+      const cell = document.createElement('div'); cell.className = 'cal-day'; cell.textContent = d;
       const cellDate = new Date(state.currentYear, state.currentMonth, d);
       const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
       const isPast = cellDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-      if (isPast || isWeekend) {
-        cell.classList.add('disabled');
-      } else {
+      if (isPast || isWeekend) { cell.classList.add('disabled'); }
+      else {
         if (cellDate.toDateString() === today.toDateString()) cell.classList.add('today');
         cell.onclick = () => selectDate(cell, d);
       }
-
-      if (state.date && state.date.getDate() === d && state.date.getMonth() === state.currentMonth)
-        cell.classList.add('selected');
-
+      if (state.date && state.date.getDate() === d && state.date.getMonth() === state.currentMonth) cell.classList.add('selected');
       grid.appendChild(cell);
     }
   }
@@ -1219,12 +1223,9 @@
   }
 
   function buildTimeSlots() {
-    const container = document.getElementById('time-slots');
-    container.innerHTML = '';
+    const container = document.getElementById('time-slots'); container.innerHTML = '';
     TIME_SLOTS.forEach(t => {
-      const slot = document.createElement('div');
-      slot.className = 'time-slot';
-      slot.textContent = t;
+      const slot = document.createElement('div'); slot.className = 'time-slot'; slot.textContent = t;
       if (BOOKED.includes(t)) { slot.classList.add('booked'); slot.title = 'Already booked'; }
       else slot.onclick = () => selectTime(slot, t);
       container.appendChild(slot);
@@ -1239,7 +1240,6 @@
     document.getElementById('btn-step2').disabled = false;
   }
 
-  // ─── UPDATE SUMMARY ───
   function updateSummary() {
     const first = document.getElementById('firstName').value;
     const last = document.getElementById('lastName').value;
@@ -1250,36 +1250,85 @@
   function selectPayTab(el, type) {
     document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
+    state.paymentMethod = type;
     document.getElementById('card-fields').style.display = type === 'card' ? 'grid' : 'none';
-    document.getElementById('paypal-fields').style.display = type === 'paypal' ? 'block' : 'none';
-    document.getElementById('applepay-fields').style.display = type === 'applepay' ? 'block' : 'none';
     document.getElementById('zelle-fields').style.display = type === 'zelle' ? 'block' : 'none';
     document.getElementById('cashapp-fields').style.display = type === 'cashapp' ? 'block' : 'none';
   }
 
-  // ─── FORMAT CARD ───
-  function formatCard(el) {
-    let v = el.value.replace(/\D/g, '').substring(0, 16);
-    el.value = v.replace(/(.{4})/g, '$1  ').trim();
-  }
-  function formatExpiry(el) {
-    let v = el.value.replace(/\D/g, '').substring(0, 4);
-    if (v.length >= 2) v = v.substring(0,2) + ' / ' + v.substring(2);
-    el.value = v;
+  // ─── HANDLE PAYMENT ───
+  async function handlePayment() {
+    const errEl = document.getElementById('payment-error-msg');
+    errEl.style.display = 'none';
+    const btn = document.getElementById('pay-btn');
+
+    // Zelle / Cash App — manual confirmation flow
+    if (state.paymentMethod === 'zelle' || state.paymentMethod === 'cashapp') {
+      completeBooking();
+      return;
+    }
+
+    // Square card payment
+    if (!squareCard) { errEl.textContent = 'Payment form not ready. Please wait a moment and try again.'; errEl.style.display = 'block'; return; }
+
+    const name = document.getElementById('cardholderName').value.trim();
+    if (!name) { errEl.textContent = 'Please enter the cardholder name.'; errEl.style.display = 'block'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
+
+    try {
+      // 1. Tokenize the card
+      const result = await squareCard.tokenize();
+      if (result.status !== 'OK') {
+        throw new Error(result.errors?.[0]?.message || 'Card tokenization failed.');
+      }
+      const token = result.token;
+
+      // 2. Send token + booking details to Netlify Function
+      const firstName = document.getElementById('firstName').value;
+      const lastName  = document.getElementById('lastName').value;
+      const email     = document.getElementById('email').value;
+      const dateStr   = state.date ? MONTHS[state.date.getMonth()] + ' ' + state.date.getDate() + ', ' + state.date.getFullYear() : '';
+
+      const response = await fetch('/.netlify/functions/square-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceId: token,
+          amountCents: state.price * 100,
+          currency: 'USD',
+          note: `CM&M Booking: ${state.service}`,
+          buyerName: `${firstName} ${lastName}`.trim(),
+          buyerEmail: email,
+          service: state.service,
+          date: dateStr,
+          time: state.time
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok || data.error) throw new Error(data.error || 'Payment failed.');
+
+      completeBooking();
+
+    } catch (err) {
+      errEl.textContent = err.message || 'Payment failed. Please try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '✦  Confirm & Pay $' + state.price.toLocaleString();
+    }
   }
 
   // ─── COMPLETE BOOKING ───
   function completeBooking() {
-    // Fill confirmation
     const dateStr = state.date ? MONTHS[state.date.getMonth()] + ' ' + state.date.getDate() + ', ' + state.date.getFullYear() : '—';
     document.getElementById('conf-service').textContent = state.service || '—';
     document.getElementById('conf-date').textContent = dateStr;
     document.getElementById('conf-time').textContent = state.time || '—';
     const name = (document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value).trim();
     document.getElementById('conf-name').textContent = name || '—';
-    document.getElementById('conf-amount').textContent = '$' + state.price;
-
-    // Hide steps, show success
+    document.getElementById('conf-amount').textContent = '$' + state.price.toLocaleString();
     document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.step').forEach(s => s.classList.add('completed'));
     document.getElementById('success').classList.add('active');
