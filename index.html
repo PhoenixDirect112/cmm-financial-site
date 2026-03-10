@@ -1005,9 +1005,261 @@
     .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
     .newsletter-form { flex-direction: column; }
   }
+
+  /* ─── LEAD GEN MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,16,26,0.82);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.35s ease both;
+  }
+  .modal-overlay.hidden { display: none; }
+
+  .modal-card {
+    background: var(--white);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.55);
+    width: 100%; max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: scaleIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;
+  }
+  .modal-header {
+    background: var(--navy);
+    padding: 28px 32px 24px;
+    position: relative;
+  }
+  .modal-header::after {
+    content: '';
+    position: absolute; bottom: -1px; left: 15%; right: 15%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .modal-close-btn {
+    position: absolute;
+    top: 14px; right: 16px;
+    width: 34px; height: 34px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: rgba(255,255,255,0.7);
+    font-size: 18px; line-height: 1;
+    transition: background 0.2s, color 0.2s;
+  }
+  .modal-close-btn:hover { background: rgba(255,255,255,0.22); color: var(--white); }
+  .modal-offer-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(200,162,82,0.15);
+    border: 1px solid rgba(200,162,82,0.3);
+    border-radius: 100px; padding: 5px 14px;
+    font-size: 11px; color: var(--gold-light);
+    font-weight: 500; letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .modal-live-dot {
+    width: 7px; height: 7px;
+    background: #48BB78; border-radius: 50%;
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(0.8); }
+  }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-weight: 600;
+    color: var(--white); margin-bottom: 4px;
+  }
+  .modal-sub { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 300; }
+
+  .modal-body { padding: 28px 32px 32px; }
+  .modal-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .modal-form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .modal-form-label {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-dark);
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .modal-form-label span { color: var(--gold); }
+  .modal-input, .modal-select, .modal-textarea {
+    padding: 13px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--text-dark);
+    background: var(--cream);
+    transition: all 0.25s ease;
+    outline: none; width: 100%;
+    -webkit-appearance: none;
+  }
+  .modal-input:focus, .modal-select:focus, .modal-textarea:focus {
+    border-color: var(--gold);
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(200,162,82,0.1);
+  }
+  .modal-input::placeholder, .modal-textarea::placeholder { color: var(--text-light); }
+  .modal-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239B7B3A'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-color: var(--cream);
+    padding-right: 40px; cursor: pointer;
+  }
+  .modal-textarea { resize: none; height: 80px; }
+  .modal-submit-btn {
+    width: 100%; margin-top: 18px;
+    padding: 17px 32px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+    border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 24px rgba(200,162,82,0.35);
+    letter-spacing: 0.3px;
+    position: relative; overflow: hidden;
+  }
+  .modal-submit-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(200,162,82,0.45); }
+  .modal-legal {
+    display: flex; align-items: flex-start; gap: 8px;
+    margin-top: 14px;
+  }
+  .modal-legal span { font-size: 10px; color: var(--text-light); line-height: 1.6; }
+
+  /* Modal success state */
+  .modal-success {
+    display: none;
+    flex-direction: column; align-items: center;
+    text-align: center; padding: 48px 32px;
+  }
+  .modal-success.show { display: flex; }
+  .modal-success-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; margin-bottom: 20px;
+    box-shadow: 0 12px 32px rgba(200,162,82,0.35);
+  }
+  .modal-success-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 700;
+    color: var(--navy); margin-bottom: 10px;
+  }
+  .modal-success-msg {
+    font-size: 14px; color: var(--text-body);
+    line-height: 1.7; margin-bottom: 24px; font-weight: 300;
+  }
+  .modal-success-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--navy); font-weight: 700; font-size: 15px;
+    border-radius: 12px; text-decoration: none; border: none; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(200,162,82,0.3);
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.3s;
+  }
+  .modal-success-cta:hover { transform: translateY(-2px); }
+
+  @media (max-width: 540px) {
+    .modal-form-row { grid-template-columns: 1fr; }
+    .modal-body { padding: 22px 20px 26px; }
+    .modal-header { padding: 22px 20px 20px; }
+  }
 </style>
 </head>
 <body>
+
+<!-- ─── LEAD GEN MODAL ─── -->
+<div class="modal-overlay" id="leadModal">
+  <div class="modal-card">
+
+    <!-- Success state -->
+    <div class="modal-success" id="modalSuccess">
+      <div class="modal-success-icon">✓</div>
+      <h2 class="modal-success-title">You're on the list!</h2>
+      <p class="modal-success-msg">Welcome to the CM&M community. Coach Mo will be in touch within 24 hours to discuss your goals and get you started.</p>
+      <button class="modal-success-cta" onclick="closeModal()">Explore Our Services →</button>
+    </div>
+
+    <!-- Form -->
+    <div id="modalFormContent">
+      <div class="modal-header">
+        <button class="modal-close-btn" onclick="closeModal()" title="Close" aria-label="Close">&#x2715;</button>
+        <div class="modal-offer-pill">
+          <div class="modal-live-dot"></div>
+          Free Consultation — Limited Spots
+        </div>
+        <h2 class="modal-title">Claim Your Free Consultation</h2>
+        <p class="modal-sub">No obligation · 60 seconds · Instant confirmation</p>
+      </div>
+
+      <div class="modal-body">
+        <form id="modalLeadForm" onsubmit="handleModalSubmit(event)" novalidate>
+
+          <div class="modal-form-row">
+            <div class="modal-form-group" style="margin-bottom:0;">
+              <label class="modal-form-label">First Name <span>*</span></label>
+              <input class="modal-input" type="text" id="mFirstName" placeholder="James" required>
+            </div>
+            <div class="modal-form-group" style="margin-bottom:0;">
+              <label class="modal-form-label">Last Name <span>*</span></label>
+              <input class="modal-input" type="text" id="mLastName" placeholder="Williams" required>
+            </div>
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-form-label">Email Address <span>*</span></label>
+            <input class="modal-input" type="email" id="mEmail" placeholder="james@email.com" required>
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-form-label">Phone Number</label>
+            <input class="modal-input" type="tel" id="mPhone" placeholder="(504) 555-0000">
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-form-label">I'm Interested In <span>*</span></label>
+            <select class="modal-select" id="mInterest" required>
+              <option value="" disabled selected>Select a service…</option>
+              <option>Foundation Plan — 1-on-1 Coaching ($390)</option>
+              <option>Growth Package — Roth + 401(k) ($695)</option>
+              <option>Legacy Lane — 6-Week Program ($1,975)</option>
+              <option>Student Workshop (Grades 9–12)</option>
+              <option>"The Good Steward" Group Session</option>
+              <option>Not sure — I'd like guidance</option>
+            </select>
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-form-label">Biggest Financial Goal <span style="color:var(--text-light); font-weight:400; text-transform:none;">(optional)</span></label>
+            <textarea class="modal-textarea" id="mGoal" placeholder="e.g. Pay off debt, build savings, plan for retirement…"></textarea>
+          </div>
+
+          <div id="modal-form-error" style="display:none; color:#c0392b; font-size:13px; margin-top:8px; padding:10px 14px; background:rgba(192,57,43,0.07); border-radius:8px; border:1px solid rgba(192,57,43,0.2);"></div>
+
+          <button type="submit" class="modal-submit-btn" id="modalSubmitBtn">
+            Claim My Free Consultation →
+          </button>
+
+          <div class="modal-legal">
+            <span>🔒</span>
+            <span>Your information is private and will never be shared. By submitting you agree to be contacted by CM&M Financial Education Consulting.</span>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <!-- TOP BAR -->
 <div class="topbar">
@@ -1547,5 +1799,55 @@
   });
 </script>
 
+<script>
+  // ─── MODAL LOGIC ───
+  function closeModal() {
+    document.getElementById('leadModal').classList.add('hidden');
+  }
+
+  // Close on overlay click (outside the card)
+  document.getElementById('leadModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  function handleModalSubmit(e) {
+    e.preventDefault();
+    const firstName = document.getElementById('mFirstName').value.trim();
+    const lastName  = document.getElementById('mLastName').value.trim();
+    const email     = document.getElementById('mEmail').value.trim();
+    const interest  = document.getElementById('mInterest').value;
+    const errEl     = document.getElementById('modal-form-error');
+
+    if (!firstName || !lastName) { showModalError('Please enter your first and last name.'); return; }
+    if (!email || !email.includes('@')) { showModalError('Please enter a valid email address.'); return; }
+    if (!interest) { showModalError('Please select a service you\'re interested in.'); return; }
+
+    errEl.style.display = 'none';
+    const btn = document.getElementById('modalSubmitBtn');
+    btn.textContent = 'Submitting…';
+    btn.disabled = true;
+
+    // ── Send lead data to your backend / CRM here ──
+    // Options:
+    //   A) Netlify Forms  — add name="leadForm" data-netlify="true" to <form>
+    //   B) Formspree      — set action="https://formspree.io/f/YOUR_ID" method="POST"
+    //   C) Your own API   — fetch('/api/leads', { method:'POST', body: JSON.stringify({...}) })
+    setTimeout(() => {
+      document.getElementById('modalFormContent').style.display = 'none';
+      document.getElementById('modalSuccess').classList.add('show');
+    }, 800);
+  }
+
+  function showModalError(msg) {
+    const errEl = document.getElementById('modal-form-error');
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  }
+</script>
 </body>
 </html>
