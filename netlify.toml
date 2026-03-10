@@ -4,3 +4,11 @@
 
 [functions]
   node_bundler = "esbuild"
+
+# Redirect root "/" to lead gen landing page
+# Visitors hitting your domain see the lead gen form first
+# After submitting, they are sent to index.html (main site)
+[[redirects]]
+  from = "/"
+  to = "/landing.html"
+  status = 200

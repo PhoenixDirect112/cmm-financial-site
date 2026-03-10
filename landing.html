@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CM&M Financial Education Consulting | Multiply Your Wealth</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C8A252;
+    --gold-light: #E8D5A3;
+    --gold-dark: #9B7B3A;
+    --navy: #1A2332;
+    --navy-deep: #0F1820;
+    --navy-light: #243447;
+    --cream: #FAF6EF;
+    --cream-dark: #F0E8D8;
+    --white: #FFFFFF;
+    --text-dark: #1A2332;
+    --text-body: #4A5568;
+    --text-light: #8A94A6;
+    --border: rgba(200,162,82,0.2);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text-dark);
+    background: var(--navy-deep);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* ─── TOP BAR ─── */
+  .topbar {
+    background: var(--navy-deep);
+    color: var(--gold-light);
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    padding: 10px 0;
+    text-align: center;
+    border-bottom: 1px solid rgba(200,162,82,0.15);
+  }
+  .topbar strong { color: var(--gold); }
+
+  /* ─── HEADER ─── */
+  header {
+    background: var(--navy);
+    border-bottom: 1px solid rgba(200,162,82,0.12);
+  }
+  .header-inner {
+    display: flex; align-items: center; justify-content: center;
+    padding: 18px 24px;
+    max-width: 1200px; margin: 0 auto;
+  }
+  .logo { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+  .logo-icon {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700; color: var(--navy); font-size: 18px;
+    letter-spacing: -0.5px;
+    box-shadow: 0 4px 16px rgba(200,162,82,0.3);
+  }
+  .logo-text { display: flex; flex-direction: column; }
+  .logo-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px; font-weight: 600;
+    color: var(--white); letter-spacing: 0.5px; line-height: 1.2;
+  }
+  .logo-tagline {
+    font-size: 11px; color: var(--gold);
+    text-transform: uppercase; letter-spacing: 2px; font-weight: 500;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    background: var(--navy);
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: -30%; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 500px;
+    background: radial-gradient(ellipse, rgba(200,162,82,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-inner {
+    max-width: 1100px; margin: 0 auto;
+    padding: 72px 24px 64px;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 64px;
+    align-items: center;
+    position: relative; z-index: 2;
+  }
+
+  /* Left content */
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(200,162,82,0.1);
+    border: 1px solid rgba(200,162,82,0.25);
+    border-radius: 100px; padding: 8px 20px;
+    font-size: 12px; color: var(--gold);
+    text-transform: uppercase; letter-spacing: 2px; font-weight: 600;
+    margin-bottom: 24px;
+    animation: fadeUp 0.7s ease both;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    background: var(--gold); border-radius: 50%;
+    animation: pulse 2s ease infinite;
+  }
+
+  .hero-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(38px, 4.5vw, 58px);
+    font-weight: 700; color: var(--white);
+    line-height: 1.1; margin-bottom: 20px;
+    animation: fadeUp 0.7s ease 0.1s both;
+  }
+  .hero-headline em { color: var(--gold); font-style: italic; }
+
+  .hero-sub {
+    font-size: 17px; color: rgba(255,255,255,0.65);
+    line-height: 1.75; max-width: 480px;
+    margin-bottom: 40px; font-weight: 300;
+    animation: fadeUp 0.7s ease 0.2s both;
+  }
+
+  .proof-list {
+    display: flex; flex-direction: column; gap: 14px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.7s ease 0.3s both;
+  }
+  .proof-item {
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .proof-check {
+    width: 22px; height: 22px; flex-shrink: 0;
+    background: rgba(200,162,82,0.15);
+    border: 1.5px solid rgba(200,162,82,0.4);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+    font-size: 11px; color: var(--gold); font-weight: 700;
+  }
+  .proof-text {
+    font-size: 14px; color: rgba(255,255,255,0.7);
+    line-height: 1.6; font-weight: 300;
+  }
+  .proof-text strong { color: var(--white); font-weight: 600; }
+
+  .next-class {
+    display: flex; align-items: center; gap: 16px;
+    background: rgba(200,162,82,0.07);
+    border: 1px solid rgba(200,162,82,0.2);
+    border-left: 4px solid var(--gold);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+    animation: fadeUp 0.7s ease 0.4s both;
+  }
+  .next-class-icon { font-size: 24px; flex-shrink: 0; }
+  .next-class-label {
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--gold);
+    font-weight: 600; margin-bottom: 4px;
+  }
+  .next-class-info {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px; color: var(--white); font-weight: 500;
+  }
+  .next-class-detail {
+    font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px;
+  }
+  .discount-tag {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--navy); font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 100px;
+    white-space: nowrap; flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+
+  /* ─── FORM CARD ─── */
+  .form-card {
+    background: var(--white);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+    animation: fadeUp 0.7s ease 0.2s both;
+  }
+  .form-card-header {
+    background: var(--navy);
+    padding: 28px 32px 24px;
+    position: relative;
+  }
+  .form-card-header::after {
+    content: '';
+    position: absolute; bottom: -1px; left: 15%; right: 15%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .form-offer-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(200,162,82,0.15);
+    border: 1px solid rgba(200,162,82,0.3);
+    border-radius: 100px; padding: 5px 14px;
+    font-size: 11px; color: var(--gold-light);
+    font-weight: 500; letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .form-card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-weight: 600;
+    color: var(--white); margin-bottom: 4px;
+  }
+  .form-card-sub { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 300; }
+
+  .form-body { padding: 28px 32px 32px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .form-group:last-of-type { margin-bottom: 0; }
+
+  .form-label {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-dark); letter-spacing: 0.3px;
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .form-label span { color: var(--gold); }
+
+  .form-input, .form-select, .form-textarea {
+    padding: 13px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--text-dark);
+    background: var(--cream);
+    transition: all 0.25s ease;
+    outline: none; width: 100%;
+    -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--gold);
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(200,162,82,0.1);
+  }
+  .form-input::placeholder, .form-textarea::placeholder { color: var(--text-light); }
+  .form-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239B7B3A'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-color: var(--cream);
+    padding-right: 40px; cursor: pointer;
+  }
+  .form-textarea { resize: none; height: 90px; font-size: 14px; }
+
+  .submit-btn {
+    width: 100%; margin-top: 20px;
+    padding: 17px 32px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+    border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 24px rgba(200,162,82,0.35);
+    letter-spacing: 0.3px;
+    position: relative; overflow: hidden;
+  }
+  .submit-btn::before {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transition: left 0.45s ease;
+  }
+  .submit-btn:hover::before { left: 100%; }
+  .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(200,162,82,0.45); }
+  .submit-btn:active { transform: translateY(0); }
+
+  .form-legal {
+    display: flex; align-items: flex-start; gap: 8px;
+    margin-top: 14px;
+  }
+  .form-legal span { font-size: 10px; color: var(--text-light); line-height: 1.6; }
+  .lock-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ─── SUCCESS STATE ─── */
+  .success-state {
+    display: none;
+    flex-direction: column; align-items: center;
+    text-align: center; padding: 48px 32px;
+  }
+  .success-state.show { display: flex; }
+  .success-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; margin-bottom: 20px;
+    box-shadow: 0 12px 32px rgba(200,162,82,0.35);
+    animation: scaleIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;
+  }
+  .success-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 700;
+    color: var(--navy); margin-bottom: 10px;
+  }
+  .success-msg {
+    font-size: 14px; color: var(--text-body);
+    line-height: 1.7; margin-bottom: 24px; font-weight: 300;
+  }
+  .success-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 15px 32px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--navy); font-weight: 700; font-size: 15px;
+    border-radius: 12px; text-decoration: none;
+    box-shadow: 0 8px 24px rgba(200,162,82,0.3);
+    transition: all 0.3s;
+  }
+  .success-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(200,162,82,0.4); }
+
+  /* ─── STATS STRIP ─── */
+  .stats-strip {
+    background: var(--navy-deep);
+    border-top: 1px solid rgba(200,162,82,0.1);
+    border-bottom: 1px solid rgba(200,162,82,0.1);
+    padding: 28px 0;
+  }
+  .stats-inner {
+    max-width: 900px; margin: 0 auto;
+    padding: 0 24px;
+    display: flex; align-items: center;
+    justify-content: center; gap: 0;
+  }
+  .stat {
+    flex: 1; text-align: center;
+    padding: 0 24px;
+    position: relative;
+    animation: fadeUp 0.7s ease both;
+  }
+  .stat + .stat::before {
+    content: '';
+    position: absolute; left: 0; top: 10%; bottom: 10%;
+    width: 1px;
+    background: rgba(200,162,82,0.2);
+  }
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px; font-weight: 700;
+    color: var(--gold); line-height: 1;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label {
+    font-size: 12px; color: rgba(255,255,255,0.45);
+    text-transform: uppercase; letter-spacing: 1.2px;
+    font-weight: 500;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--navy);
+    padding: 24px 0;
+    text-align: center;
+    border-top: 1px solid rgba(200,162,82,0.1);
+  }
+  footer p { color: rgba(255,255,255,0.3); font-size: 13px; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 900px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 40px; padding: 48px 24px; }
+    .form-card { max-width: 520px; margin: 0 auto; }
+    .hero-headline { font-size: 38px; }
+  }
+  @media (max-width: 540px) {
+    .form-row { grid-template-columns: 1fr; }
+    .form-body { padding: 22px 20px 26px; }
+    .form-card-header { padding: 22px 20px 20px; }
+    .stats-inner { flex-wrap: wrap; gap: 24px; }
+    .stat + .stat::before { display: none; }
+    .next-class { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span>📞 <strong>504.638.1670</strong> &nbsp;·&nbsp; 504.434.2272 &nbsp;·&nbsp; 1200 Cook St, Gretna, LA &nbsp;·&nbsp; <strong>IAP Certified Coach</strong></span>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">CM</div>
+      <div class="logo-text">
+        <span class="logo-name">CM&amp;M Consulting</span>
+        <span class="logo-tagline">Financial Education</span>
+      </div>
+    </a>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+
+    <!-- Left: copy -->
+    <div>
+      <div class="hero-badge">
+        <div class="live-dot"></div>
+        Now Enrolling — March 2026
+      </div>
+
+      <h1 class="hero-headline">
+        Multiply Your Wealth<br>
+        Through <em>Education</em>
+      </h1>
+
+      <p class="hero-sub">
+        Join hundreds of New Orleans-area families who've transformed their financial future with Coach Mo Pounds — IAP Certified, faith-guided, and results-driven.
+      </p>
+
+      <div class="proof-list">
+        <div class="proof-item">
+          <div class="proof-check">✓</div>
+          <p class="proof-text"><strong>Proven strategies</strong> for building savings, eliminating debt, and growing real wealth</p>
+        </div>
+        <div class="proof-item">
+          <div class="proof-check">✓</div>
+          <p class="proof-text"><strong>One-on-one coaching</strong> and group workshops tailored to your life and goals</p>
+        </div>
+        <div class="proof-item">
+          <div class="proof-check">✓</div>
+          <p class="proof-text"><strong>Student programs</strong> for grades 9–12 and faith-based sessions for religious groups</p>
+        </div>
+        <div class="proof-item">
+          <div class="proof-check">✓</div>
+          <p class="proof-text"><strong>Community-rooted</strong> — serving Gretna, New Orleans &amp; Greater Metro since day one</p>
+        </div>
+      </div>
+
+      <div class="next-class">
+        <div class="next-class-icon">📅</div>
+        <div>
+          <div class="next-class-label">Next Class</div>
+          <div class="next-class-info">March 21, 2026 · 1:00–4:30 PM</div>
+          <div class="next-class-detail">1200 Cook St, Gretna, LA 70053</div>
+        </div>
+        <div class="discount-tag">10–20% Off First Session</div>
+      </div>
+    </div>
+
+    <!-- Right: form -->
+    <div>
+      <div class="form-card">
+
+        <!-- Success state -->
+        <div class="success-state" id="successState">
+          <div class="success-icon">✓</div>
+          <h2 class="success-title">You're on the list!</h2>
+          <p class="success-msg">Welcome to the CM&amp;M community. Coach Mo will be in touch within 24 hours to discuss your goals and get you started.</p>
+          <a href="index.html" class="success-cta">Explore Our Services →</a>
+        </div>
+
+        <!-- Form -->
+        <div id="formContent">
+          <div class="form-card-header">
+            <div class="form-offer-pill">
+              <div class="live-dot"></div>
+              Free Consultation — Limited Spots
+            </div>
+            <h2 class="form-card-title">Claim Your Free Consultation</h2>
+            <p class="form-card-sub">No obligation · 60 seconds · Instant confirmation</p>
+          </div>
+
+          <div class="form-body">
+            <form id="leadForm" onsubmit="handleSubmit(event)" novalidate>
+
+              <div class="form-row">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">First Name <span>*</span></label>
+                  <input class="form-input" type="text" id="firstName" placeholder="James" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Last Name <span>*</span></label>
+                  <input class="form-input" type="text" id="lastName" placeholder="Williams" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Email Address <span>*</span></label>
+                <input class="form-input" type="email" id="email" placeholder="james@email.com" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input class="form-input" type="tel" id="phone" placeholder="(504) 555-0000">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">I'm Interested In <span>*</span></label>
+                <select class="form-select" id="interest" required>
+                  <option value="" disabled selected>Select a service…</option>
+                  <option>Foundation Plan — 1-on-1 Coaching ($390)</option>
+                  <option>Growth Package — Roth + 401(k) ($695)</option>
+                  <option>Legacy Lane — 6-Week Program ($1,975)</option>
+                  <option>Student Workshop (Grades 9–12)</option>
+                  <option>"The Good Steward" Group Session</option>
+                  <option>Not sure — I'd like guidance</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Biggest Financial Goal <span style="color:var(--text-light); font-weight:400; text-transform:none;">(optional)</span></label>
+                <textarea class="form-textarea" id="goal" placeholder="e.g. Pay off debt, build savings, plan for retirement, invest for my kids…"></textarea>
+              </div>
+
+              <div id="form-error" style="display:none; color:#c0392b; font-size:13px; margin-top:8px; padding:10px 14px; background:rgba(192,57,43,0.07); border-radius:8px; border:1px solid rgba(192,57,43,0.2);"></div>
+
+              <button type="submit" class="submit-btn" id="submitBtn">
+                Claim My Free Consultation →
+              </button>
+
+              <div class="form-legal">
+                <span class="lock-icon">🔒</span>
+                <span>Your information is private and will never be shared. By submitting you agree to be contacted by CM&amp;M Financial Education Consulting.</span>
+              </div>
+
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stats-inner">
+    <div class="stat">
+      <div class="stat-num">500+</div>
+      <div class="stat-label">Students Educated</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">10+</div>
+      <div class="stat-label">Years Serving the Community</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">4.9★</div>
+      <div class="stat-label">Client Satisfaction</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">IAP</div>
+      <div class="stat-label">Certified Coach</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>&copy; 2026 CM&amp;M Financial Education Consulting LLC · Gretna, Louisiana · IAP Certified</p>
+</footer>
+
+<script>
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName  = document.getElementById('lastName').value.trim();
+    const email     = document.getElementById('email').value.trim();
+    const interest  = document.getElementById('interest').value;
+    const errEl     = document.getElementById('form-error');
+
+    // Basic validation
+    if (!firstName || !lastName) { showError('Please enter your first and last name.'); return; }
+    if (!email || !email.includes('@')) { showError('Please enter a valid email address.'); return; }
+    if (!interest) { showError('Please select a service you\'re interested in.'); return; }
+
+    errEl.style.display = 'none';
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Submitting…';
+    btn.disabled = true;
+
+    // ── Send lead data to your backend / CRM here ──
+    // Options:
+    //   A) Netlify Forms  — add name="leadForm" data-netlify="true" to <form>
+    //   B) Formspree      — set action="https://formspree.io/f/YOUR_ID" method="POST"
+    //   C) Your own API   — fetch('/api/leads', { method:'POST', body: JSON.stringify({...}) })
+    //
+    // For now we simulate a short delay then show success:
+    setTimeout(() => {
+      document.getElementById('formContent').style.display = 'none';
+      document.getElementById('successState').classList.add('show');
+    }, 800);
+  }
+
+  function showError(msg) {
+    const errEl = document.getElementById('form-error');
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  }
+</script>
+
+</body>
+</html>
