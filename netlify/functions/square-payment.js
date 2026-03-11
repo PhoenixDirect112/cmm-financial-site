@@ -1,10 +1,15 @@
-// CM&M Financial Education — Square Payment Function
 // netlify/functions/square-payment.js
+const Square = require('square');
 
-const { Client, Environment, ApiError } = require('square');
-const crypto = require('crypto');
+const client = new Square.Client({
+  accessToken: process.env.SQUARE_ACCESS_TOKEN,
+  environment: process.env.SQUARE_ENVIRONMENT === 'production'
+    ? Square.Environment.Production
+    : Square.Environment.Sandbox,
+});
 
 exports.handler = async (event) => {
+  // Only accept POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
@@ -16,53 +21,61 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request body' }) };
   }
 
-  const { sourceId, amountCents, currency = 'USD', note, buyerEmail, service, date, time } = body;
+  const {
+    sourceId,       // card nonce from Square Web Payments SDK
+    amountCents,    // e.g. 39000 for $390
+    currency = 'USD',
+    note,           // e.g. "CM&M Booking: Foundation Plan"
+    buyerName,
+    buyerEmail,
+    service,
+    date,
+    time,
+  } = body;
 
-  if (!sourceId || !amountCents) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Missing sourceId or amount' }) };
-  }
-
-  const client = new Client({
-    accessToken: process.env.SQUARE_ACCESS_TOKEN,
-    environment: process.env.SQUARE_ENVIRONMENT === 'production'
-      ? Environment.Production
-      : Environment.Sandbox,
-  });
+  // Basic validation
+  if (!sourceId)    return { statusCode: 400, body: JSON.stringify({ error: 'Missing sourceId' }) };
+  if (!amountCents) return { statusCode: 400, body: JSON.stringify({ error: 'Missing amountCents' }) };
 
   try {
     const { result } = await client.paymentsApi.createPayment({
       sourceId,
-      idempotencyKey: crypto.randomUUID(),
+      idempotencyKey: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       amountMoney: {
         amount: BigInt(amountCents),
         currency,
       },
       locationId: process.env.SQUARE_LOCATION_ID,
-      note: note || 'CM&M Session Booking',
+      note: note || `CM&M Booking: ${service}`,
       buyerEmailAddress: buyerEmail || undefined,
-      referenceId: `CMM-${Date.now()}`,
+      billingAddress: buyerName ? { firstName: buyerName.split(' ')[0], lastName: buyerName.split(' ').slice(1).join(' ') } : undefined,
     });
 
     const payment = result.payment;
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
         paymentId: payment.id,
         status: payment.status,
         receiptUrl: payment.receiptUrl,
+        amountCents: Number(payment.amountMoney?.amount),
+        service,
+        date,
+        time,
       }),
     };
 
-  } catch (error) {
-    if (error instanceof ApiError) {
-      const msg = error.errors?.[0]?.detail || 'Payment failed';
-      console.error('Square ApiError:', error.errors);
-      return { statusCode: 402, body: JSON.stringify({ error: msg }) };
-    }
-    console.error('Unexpected error:', error);
-    return { statusCode: 500, body: JSON.stringify({ error: 'Server error. Please try again.' }) };
+  } catch (err) {
+    // Square SDK errors have an `errors` array
+    const squareErrors = err?.errors;
+    const message = squareErrors?.[0]?.detail || err.message || 'Payment processing failed.';
+    console.error('[square-payment] Error:', squareErrors || err.message);
+
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: message }),
+    };
   }
 };
