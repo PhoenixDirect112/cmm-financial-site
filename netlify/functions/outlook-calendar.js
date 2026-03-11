@@ -10,7 +10,6 @@ exports.handler = async (event) => {
     'Content-Type': 'application/json'
   };
 
-  // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
@@ -18,14 +17,11 @@ exports.handler = async (event) => {
   const { MS_CLIENT_ID, MS_TENANT_ID, MS_CLIENT_SECRET } = process.env;
 
   if (!MS_CLIENT_ID || !MS_TENANT_ID || !MS_CLIENT_SECRET) {
-    return {
-      statusCode: 500, headers,
-      body: JSON.stringify({ error: 'Microsoft credentials not configured.' })
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Microsoft credentials not configured.' }) };
   }
 
   try {
-    // ─── STEP 1: Get an access token from Microsoft ───
+    // ─── GET ACCESS TOKEN ───
     const tokenRes = await fetch(
       `https://login.microsoftonline.com/${MS_TENANT_ID}/oauth2/v2.0/token`,
       {
@@ -42,10 +38,7 @@ exports.handler = async (event) => {
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
       console.error('Token error:', tokenData);
-      return {
-        statusCode: 401, headers,
-        body: JSON.stringify({ error: 'Failed to authenticate with Microsoft.' })
-      };
+      return { statusCode: 401, headers, body: JSON.stringify({ error: 'Failed to authenticate with Microsoft.' }) };
     }
     const accessToken = tokenData.access_token;
     const graphHeaders = {
@@ -53,71 +46,88 @@ exports.handler = async (event) => {
       'Content-Type': 'application/json'
     };
 
-    // Coach Mo's email — used to query her specific calendar
     const COACH_EMAIL = 'matecha@cmandmconsulting.com';
+
+    const TIME_SLOTS = [
+      '9:00 AM','9:30 AM','10:00 AM','10:30 AM',
+      '11:00 AM','11:30 AM','12:00 PM','12:30 PM',
+      '1:00 PM','1:30 PM','2:00 PM','2:30 PM',
+      '3:00 PM','3:30 PM','4:00 PM','4:30 PM'
+    ];
+
+    // Helper: parse "9:00 AM" → { hours, minutes } in 24hr
+    function parseSlot(slot) {
+      const [time, period] = slot.split(' ');
+      let [hours, minutes] = time.split(':').map(Number);
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      return { hours, minutes };
+    }
+
+    // Helper: pad number to 2 digits
+    const pad = n => String(n).padStart(2, '0');
 
     // ─── GET AVAILABILITY ───
     if (event.httpMethod === 'GET') {
       const params = event.queryStringParameters || {};
-      const date = params.date; // e.g. "2026-03-15"
+      const date = params.date;
       if (!date) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing date parameter.' }) };
       }
 
-      // Fetch calendar events for that full day (Central Time, UTC-6)
-      const startUtc = new Date(`${date}T00:00:00-06:00`).toISOString();
-      const endUtc   = new Date(`${date}T23:59:59-06:00`).toISOString();
+      const startUtc = `${date}T00:00:00Z`;
+      const endUtc   = `${date}T23:59:59Z`;
 
       const eventsRes = await fetch(
         `https://graph.microsoft.com/v1.0/users/${COACH_EMAIL}/calendarView` +
-        `?startDateTime=${startUtc}&endDateTime=${endUtc}` +
-        `&$select=subject,start,end`,
+        `?startDateTime=${startUtc}&endDateTime=${endUtc}&$select=subject,start,end`,
         { headers: graphHeaders }
       );
       const eventsData = await eventsRes.json();
 
       if (eventsData.error) {
         console.error('Graph API error:', eventsData.error);
-        return {
-          statusCode: 500, headers,
-          body: JSON.stringify({ error: eventsData.error.message })
-        };
+        return { statusCode: 500, headers, body: JSON.stringify({ error: eventsData.error.message }) };
       }
 
-      // Convert events to busy time slots matching the site's TIME_SLOTS format
-      const TIME_SLOTS = [
-        '9:00 AM','9:30 AM','10:00 AM','10:30 AM',
-        '11:00 AM','11:30 AM','12:00 PM','12:30 PM',
-        '1:00 PM','1:30 PM','2:00 PM','2:30 PM',
-        '3:00 PM','3:30 PM','4:00 PM','4:30 PM'
-      ];
+      const events = eventsData.value || [];
+      console.log(`Found ${events.length} events on ${date}`);
+
+      // Detect CDT vs CST for correct UTC offset
+      const slotDate = new Date(date + 'T12:00:00Z');
+      const month = slotDate.getUTCMonth();
+      const day   = slotDate.getUTCDate();
+      const isCDT = (month > 2 && month < 10) || (month === 2 && day >= 8) || (month === 10 && day < 1);
+      const offsetHours = isCDT ? 5 : 6;
 
       const busySlots = [];
-      const events = eventsData.value || [];
 
       TIME_SLOTS.forEach(slot => {
-        // Parse slot into a Date for comparison
-        const [time, period] = slot.split(' ');
-        let [hours, minutes] = time.split(':').map(Number);
-        if (period === 'PM' && hours !== 12) hours += 12;
-        if (period === 'AM' && hours === 12) hours = 0;
-        const slotStart = new Date(`${date}T${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:00-06:00`);
-        const slotEnd   = new Date(slotStart.getTime() + 60 * 60 * 1000); // 1hr slots
+        const { hours, minutes } = parseSlot(slot);
 
-        // Check if any event overlaps this slot
+        // Convert slot local time to UTC for comparison
+        const slotStartUTC = new Date(Date.UTC(
+          slotDate.getUTCFullYear(), slotDate.getUTCMonth(), slotDate.getUTCDate(),
+          hours + offsetHours, minutes, 0
+        ));
+        // FIX: end = start + exactly 1hr in milliseconds — no timezone math
+        const slotEndUTC = new Date(slotStartUTC.getTime() + 60 * 60 * 1000);
+
         const isBusy = events.some(ev => {
-          const evStart = new Date(ev.start.dateTime + (ev.start.timeZone === 'UTC' ? 'Z' : ''));
-          const evEnd   = new Date(ev.end.dateTime   + (ev.end.timeZone   === 'UTC' ? 'Z' : ''));
-          return evStart < slotEnd && evEnd > slotStart;
+          let evStartStr = ev.start.dateTime;
+          let evEndStr   = ev.end.dateTime;
+          if (ev.start.timeZone === 'UTC' && !evStartStr.endsWith('Z')) evStartStr += 'Z';
+          if (ev.end.timeZone   === 'UTC' && !evEndStr.endsWith('Z'))   evEndStr   += 'Z';
+          const evStart = new Date(evStartStr);
+          const evEnd   = new Date(evEndStr);
+          return evStart < slotEndUTC && evEnd > slotStartUTC;
         });
 
         if (isBusy) busySlots.push(slot);
       });
 
-      return {
-        statusCode: 200, headers,
-        body: JSON.stringify({ date, busySlots })
-      };
+      console.log('Busy slots:', busySlots);
+      return { statusCode: 200, headers, body: JSON.stringify({ date, busySlots }) };
     }
 
     // ─── CREATE BOOKING ───
@@ -129,18 +139,17 @@ exports.handler = async (event) => {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing booking fields.' }) };
       }
 
-      // Parse the time slot into a start datetime
-      const [t, period] = time.split(' ');
-      let [hours, minutes] = t.split(':').map(Number);
-      if (period === 'PM' && hours !== 12) hours += 12;
-      if (period === 'AM' && hours === 12) hours = 0;
+      const { hours, minutes } = parseSlot(time);
 
-      const startISO = `${date}T${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:00`;
-      const endDate  = new Date(`${startISO}-06:00`);
-      endDate.setMinutes(endDate.getMinutes() + durationMinutes);
-      const endISO = endDate.toISOString().replace('Z','');
+      // FIX: Build start/end as plain local time strings — let timeZone field handle offset
+      const startISO = `${date}T${pad(hours)}:${pad(minutes)}:00`;
 
-      // Create the calendar event on Coach Mo's Outlook
+      // FIX: Pure arithmetic for end time — no Date object timezone confusion
+      const endTotalMins = hours * 60 + minutes + durationMinutes;
+      const endISO = `${date}T${pad(Math.floor(endTotalMins / 60))}:${pad(endTotalMins % 60)}:00`;
+
+      console.log(`Creating event: ${startISO} → ${endISO} America/Chicago`);
+
       const eventPayload = {
         subject: `CM&M Booking: ${service} — ${clientName}`,
         body: {
@@ -154,13 +163,11 @@ exports.handler = async (event) => {
             <p><em>Booked via CM&M Financial website</em></p>
           `
         },
+        // FIX: Pass clean local datetime + named timezone — Graph converts to UTC correctly
         start: { dateTime: startISO, timeZone: 'America/Chicago' },
-        end:   { dateTime: endISO.split('-06')[0] || endISO, timeZone: 'America/Chicago' },
+        end:   { dateTime: endISO,   timeZone: 'America/Chicago' },
         attendees: [
-          {
-            emailAddress: { address: clientEmail, name: clientName },
-            type: 'required'
-          }
+          { emailAddress: { address: clientEmail, name: clientName }, type: 'required' }
         ],
         isReminderOn: true,
         reminderMinutesBeforeStart: 60
@@ -174,25 +181,17 @@ exports.handler = async (event) => {
 
       if (createData.error) {
         console.error('Create event error:', createData.error);
-        return {
-          statusCode: 500, headers,
-          body: JSON.stringify({ error: createData.error.message })
-        };
+        return { statusCode: 500, headers, body: JSON.stringify({ error: createData.error.message }) };
       }
 
-      return {
-        statusCode: 200, headers,
-        body: JSON.stringify({ success: true, eventId: createData.id })
-      };
+      console.log('Event created:', createData.id);
+      return { statusCode: 200, headers, body: JSON.stringify({ success: true, eventId: createData.id }) };
     }
 
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed.' }) };
 
   } catch (err) {
     console.error('Function error:', err);
-    return {
-      statusCode: 500, headers,
-      body: JSON.stringify({ error: err.message || 'Internal server error.' })
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message || 'Internal server error.' }) };
   }
 };

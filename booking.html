@@ -1257,8 +1257,20 @@
   function buildTimeSlots() {
     const container = document.getElementById('time-slots');
     container.innerHTML = '';
+    const now = new Date();
+    const isToday = state.date && state.date.toDateString() === now.toDateString();
     TIME_SLOTS.forEach(t => {
       const slot = document.createElement('div'); slot.className = 'time-slot'; slot.textContent = t;
+      // FIX 1: Grey out past times when today is selected
+      if (isToday) {
+        const [time, period] = t.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (period === 'PM' && hours !== 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+        const slotTime = new Date(); slotTime.setHours(hours, minutes, 0, 0);
+        if (slotTime <= now) { slot.classList.add('booked'); slot.title = 'Time has passed'; container.appendChild(slot); return; }
+      }
+      // FIX 3: Grey out slots already booked in Outlook
       if ((state.busySlots || []).includes(t)) {
         slot.classList.add('booked'); slot.title = 'Already booked';
       } else {
