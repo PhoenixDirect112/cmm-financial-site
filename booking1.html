@@ -1111,18 +1111,13 @@
     currentStep: 1,
     currentMonth: new Date().getMonth(),
     currentYear: new Date().getFullYear(),
-    paymentMethod: 'card',
-    busySlots: []
+    paymentMethod: 'card'
   };
 
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const TIME_SLOTS = [
-    '9:00 AM','9:30 AM','10:00 AM','10:30 AM',
-    '11:00 AM','11:30 AM','12:00 PM','12:30 PM',
-    '1:00 PM','1:30 PM','2:00 PM','2:30 PM',
-    '3:00 PM','3:30 PM','4:00 PM','4:30 PM'
-  ];
+  const TIME_SLOTS = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM'];
+  const BOOKED = ['9:30 AM','11:00 AM','2:00 PM'];
 
   let squareCard = null;
 
@@ -1221,7 +1216,7 @@
     buildCalendar();
   }
 
-  async function selectDate(cell, d) {
+  function selectDate(cell, d) {
     document.querySelectorAll('.cal-day').forEach(c => c.classList.remove('selected'));
     cell.classList.add('selected');
     state.date = new Date(state.currentYear, state.currentMonth, d);
@@ -1230,40 +1225,16 @@
     state.time = null;
     document.getElementById('sum-time').textContent = 'Not selected';
     document.getElementById('btn-step2').disabled = true;
-
-    // Show time section with loading state
-    document.getElementById('time-section').style.display = 'block';
-    const container = document.getElementById('time-slots');
-    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-light);font-size:14px;">⏳ Checking availability…</div>';
-
-    // Fetch live availability from Outlook
-    const yyyy = state.currentYear;
-    const mm   = String(state.currentMonth + 1).padStart(2, '0');
-    const dd   = String(d).padStart(2, '0');
-    const dateParam = `${yyyy}-${mm}-${dd}`;
-
-    try {
-      const res  = await fetch(`/.netlify/functions/outlook-calendar?action=availability&date=${dateParam}`);
-      const data = await res.json();
-      state.busySlots = data.busySlots || [];
-    } catch (e) {
-      console.warn('Could not fetch availability, showing all slots:', e);
-      state.busySlots = [];
-    }
-
     buildTimeSlots();
+    document.getElementById('time-section').style.display = 'block';
   }
 
   function buildTimeSlots() {
-    const container = document.getElementById('time-slots');
-    container.innerHTML = '';
+    const container = document.getElementById('time-slots'); container.innerHTML = '';
     TIME_SLOTS.forEach(t => {
       const slot = document.createElement('div'); slot.className = 'time-slot'; slot.textContent = t;
-      if ((state.busySlots || []).includes(t)) {
-        slot.classList.add('booked'); slot.title = 'Already booked';
-      } else {
-        slot.onclick = () => selectTime(slot, t);
-      }
+      if (BOOKED.includes(t)) { slot.classList.add('booked'); slot.title = 'Already booked'; }
+      else slot.onclick = () => selectTime(slot, t);
       container.appendChild(slot);
     });
   }
@@ -1357,38 +1328,14 @@
   }
 
   // ─── COMPLETE BOOKING ───
-  async function completeBooking() {
+  function completeBooking() {
     const dateStr = state.date ? MONTHS[state.date.getMonth()] + ' ' + state.date.getDate() + ', ' + state.date.getFullYear() : '—';
     document.getElementById('conf-service').textContent = state.service || '—';
     document.getElementById('conf-date').textContent = dateStr;
     document.getElementById('conf-time').textContent = state.time || '—';
-    const firstName = document.getElementById('firstName').value;
-    const lastName  = document.getElementById('lastName').value;
-    const clientEmail = document.getElementById('email').value;
-    const name = (firstName + ' ' + lastName).trim();
+    const name = (document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value).trim();
     document.getElementById('conf-name').textContent = name || '—';
     document.getElementById('conf-amount').textContent = '$' + state.price.toLocaleString();
-
-    // Create Outlook calendar event (fire and forget — don't block the success screen)
-    if (state.date && state.time) {
-      const yyyy = state.date.getFullYear();
-      const mm   = String(state.date.getMonth() + 1).padStart(2, '0');
-      const dd   = String(state.date.getDate()).padStart(2, '0');
-      fetch('/.netlify/functions/outlook-calendar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'book',
-          clientName: name,
-          clientEmail: clientEmail,
-          service: state.service,
-          date: `${yyyy}-${mm}-${dd}`,
-          time: state.time,
-          durationMinutes: 60
-        })
-      }).catch(e => console.warn('Calendar event creation failed (non-critical):', e));
-    }
-
     document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.step').forEach(s => s.classList.add('completed'));
     document.getElementById('success').classList.add('active');
