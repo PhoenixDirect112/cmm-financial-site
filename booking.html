@@ -1089,8 +1089,15 @@
   // SQUARE CONFIG — replace with your real keys from
   // developer.squareup.com → Applications → your app
   // ════════════════════════════════════════════════════════
-  const SQUARE_APP_ID  = 'sandbox-sq0idb-REPLACE_WITH_YOUR_APP_ID';
+  const SQUARE_APP_ID      = 'sandbox-sq0idb-REPLACE_WITH_YOUR_APP_ID';
   const SQUARE_LOCATION_ID = 'REPLACE_WITH_YOUR_LOCATION_ID';
+  //
+  // TO GO LIVE:
+  // 1. Change the <script src> above to: https://web.squarecdn.com/v1/square.js
+  // 2. Replace SQUARE_APP_ID with your PRODUCTION Application ID
+  // 3. Replace SQUARE_LOCATION_ID with your PRODUCTION Location ID
+  // 4. Set SQUARE_ACCESS_TOKEN + SQUARE_LOCATION_ID in Netlify env vars
+  // 5. Set SQUARE_ENVIRONMENT=production in Netlify env vars
   // For production, change the script src above to:
   // https://web.squarecdn.com/v1/square.js
   // and update APP_ID / LOCATION_ID to your production values
