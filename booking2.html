@@ -1269,11 +1269,7 @@
     const container = document.getElementById('time-slots');
     container.innerHTML = '';
     const now = new Date();
-    // Compare year/month/day explicitly to avoid timezone edge cases
-    const isToday = state.date &&
-      state.date.getFullYear() === now.getFullYear() &&
-      state.date.getMonth()    === now.getMonth() &&
-      state.date.getDate()     === now.getDate();
+    const isToday = state.date && state.date.toDateString() === now.toDateString();
     const duration = state.duration || 60;
     const lastSlotMins = slotToMins('4:30 PM'); // last available start = 4:30 PM
 
