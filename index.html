@@ -1200,32 +1200,35 @@
       </div>
 
       <div class="modal-body">
-        <form id="modalLeadForm" onsubmit="handleModalSubmit(event)" novalidate>
+        <form id="modalLeadForm" name="popup-consultation" method="POST" data-netlify="true" netlify-honeypot="bot-field" onsubmit="handleModalSubmit(event)" novalidate>
+          <input type="hidden" name="form-name" value="popup-consultation" />
+          <input type="hidden" name="source" value="Popup Modal (Homepage — 4s delay)" />
+          <p style="display:none;"><label>Don't fill this out: <input name="bot-field" /></label></p>
 
           <div class="modal-form-row">
             <div class="modal-form-group" style="margin-bottom:0;">
               <label class="modal-form-label">First Name <span>*</span></label>
-              <input class="modal-input" type="text" id="mFirstName" placeholder="James" required>
+              <input class="modal-input" type="text" id="mFirstName" name="first-name" placeholder="James" required>
             </div>
             <div class="modal-form-group" style="margin-bottom:0;">
               <label class="modal-form-label">Last Name <span>*</span></label>
-              <input class="modal-input" type="text" id="mLastName" placeholder="Williams" required>
+              <input class="modal-input" type="text" id="mLastName" name="last-name" placeholder="Williams" required>
             </div>
           </div>
 
           <div class="modal-form-group">
             <label class="modal-form-label">Email Address <span>*</span></label>
-            <input class="modal-input" type="email" id="mEmail" placeholder="james@email.com" required>
+            <input class="modal-input" type="email" id="mEmail" name="email" placeholder="james@email.com" required>
           </div>
 
           <div class="modal-form-group">
             <label class="modal-form-label">Phone Number</label>
-            <input class="modal-input" type="tel" id="mPhone" placeholder="(504) 555-0000">
+            <input class="modal-input" type="tel" id="mPhone" name="phone" placeholder="(504) 555-0000">
           </div>
 
           <div class="modal-form-group">
             <label class="modal-form-label">I'm Interested In <span>*</span></label>
-            <select class="modal-select" id="mInterest" required>
+            <select class="modal-select" id="mInterest" name="service" required>
               <option value="" disabled selected>Select a service…</option>
               <option>Foundation Plan — 1-on-1 Coaching ($390)</option>
               <option>Growth Package — Roth + 401(k) ($695)</option>
@@ -1238,7 +1241,7 @@
 
           <div class="modal-form-group">
             <label class="modal-form-label">Biggest Financial Goal <span style="color:var(--text-light); font-weight:400; text-transform:none;">(optional)</span></label>
-            <textarea class="modal-textarea" id="mGoal" placeholder="e.g. Pay off debt, build savings, plan for retirement…"></textarea>
+            <textarea class="modal-textarea" id="mGoal" name="financial-goal" placeholder="e.g. Pay off debt, build savings, plan for retirement…"></textarea>
           </div>
 
           <div id="modal-form-error" style="display:none; color:#c0392b; font-size:13px; margin-top:8px; padding:10px 14px; background:rgba(192,57,43,0.07); border-radius:8px; border:1px solid rgba(192,57,43,0.2);"></div>
@@ -1690,11 +1693,26 @@
         <a href="tel:5046381670" class="btn-secondary">📞 Call 504.638.1670</a>
       </div>
       <div style="margin-top: 40px;">
-        <p style="color: rgba(255,255,255,0.4); font-size: 14px; margin-bottom: 16px;">Get 10% off your first session — join our newsletter:</p>
-        <div class="newsletter-form">
-          <input type="email" placeholder="Enter your email address">
-          <button type="button">Subscribe</button>
-        </div>
+        <p style="color: rgba(255,255,255,0.4); font-size: 14px; margin-bottom: 16px;">Get 10% off your first session — enter your email to claim your discount:</p>
+        <form
+          id="newsletterForm"
+          name="newsletter"
+          method="POST"
+          data-netlify="true"
+          netlify-honeypot="bot-field"
+          onsubmit="handleNewsletterSubmit(event)"
+          novalidate
+        >
+          <input type="hidden" name="form-name" value="newsletter" />
+          <input type="hidden" name="source" value="Newsletter CTA (Homepage — Bottom Section)" />
+          <p style="display:none;"><label>Don't fill this out: <input name="bot-field" /></label></p>
+          <div class="newsletter-form">
+            <input type="email" name="email" id="newsletterEmail" placeholder="Enter your email address" required>
+            <button type="submit" id="newsletterBtn">Subscribe</button>
+          </div>
+          <div id="newsletter-error" style="display:none; color:#c0392b; font-size:13px; margin-top:8px;"></div>
+          <div id="newsletter-success" style="display:none; color:#48BB78; font-size:14px; margin-top:12px; font-weight:600;">✓ You're in! Check your inbox for your 10% discount.</div>
+        </form>
       </div>
     </div>
   </div>
@@ -1835,21 +1853,71 @@
     btn.textContent = 'Submitting…';
     btn.disabled = true;
 
-    // ── Send lead data to your backend / CRM here ──
-    // Options:
-    //   A) Netlify Forms  — add name="leadForm" data-netlify="true" to <form>
-    //   B) Formspree      — set action="https://formspree.io/f/YOUR_ID" method="POST"
-    //   C) Your own API   — fetch('/api/leads', { method:'POST', body: JSON.stringify({...}) })
-    setTimeout(() => {
-      document.getElementById('modalFormContent').style.display = 'none';
-      document.getElementById('modalSuccess').classList.add('show');
-    }, 800);
+    // ── Submit to Netlify Forms ──
+    const form = document.getElementById('modalLeadForm');
+    fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(new FormData(form)).toString()
+    })
+    .then(response => {
+      if (response.ok) {
+        document.getElementById('modalFormContent').style.display = 'none';
+        document.getElementById('modalSuccess').classList.add('show');
+      } else {
+        throw new Error('Submission failed');
+      }
+    })
+    .catch(() => {
+      showModalError('Something went wrong. Please email matecha@cmandmconsulting.com directly.');
+      btn.textContent = 'Claim My Free Consultation →';
+      btn.disabled = false;
+    });
   }
 
   function showModalError(msg) {
     const errEl = document.getElementById('modal-form-error');
     errEl.textContent = msg;
     errEl.style.display = 'block';
+  }
+
+  function handleNewsletterSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('newsletterEmail').value.trim();
+    const errEl = document.getElementById('newsletter-error');
+    const successEl = document.getElementById('newsletter-success');
+    const btn = document.getElementById('newsletterBtn');
+
+    if (!email || !email.includes('@')) {
+      errEl.textContent = 'Please enter a valid email address.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    btn.textContent = 'Subscribing…';
+    btn.disabled = true;
+
+    const form = document.getElementById('newsletterForm');
+    fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(new FormData(form)).toString()
+    })
+    .then(response => {
+      if (response.ok) {
+        document.querySelector('#newsletterForm .newsletter-form').style.display = 'none';
+        successEl.style.display = 'block';
+      } else {
+        throw new Error('Failed');
+      }
+    })
+    .catch(() => {
+      errEl.textContent = 'Something went wrong. Please email matecha@cmandmconsulting.com directly.';
+      errEl.style.display = 'block';
+      btn.textContent = 'Subscribe';
+      btn.disabled = false;
+    });
   }
 </script>
 </body>
