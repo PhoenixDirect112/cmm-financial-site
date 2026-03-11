@@ -1,15 +1,7 @@
 // netlify/functions/square-payment.js
-const Square = require('square');
-
-const client = new Square.Client({
-  accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: process.env.SQUARE_ENVIRONMENT === 'production'
-    ? Square.Environment.Production
-    : Square.Environment.Sandbox,
-});
+// Uses Square Payments API directly via fetch (no SDK needed)
 
 exports.handler = async (event) => {
-  // Only accept POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
@@ -22,36 +14,57 @@ exports.handler = async (event) => {
   }
 
   const {
-    sourceId,       // card nonce from Square Web Payments SDK
-    amountCents,    // e.g. 39000 for $390
+    sourceId,
+    amountCents,
     currency = 'USD',
-    note,           // e.g. "CM&M Booking: Foundation Plan"
-    buyerName,
+    note,
     buyerEmail,
     service,
     date,
     time,
   } = body;
 
-  // Basic validation
   if (!sourceId)    return { statusCode: 400, body: JSON.stringify({ error: 'Missing sourceId' }) };
   if (!amountCents) return { statusCode: 400, body: JSON.stringify({ error: 'Missing amountCents' }) };
 
+  const accessToken = process.env.SQUARE_ACCESS_TOKEN;
+  const locationId  = process.env.SQUARE_LOCATION_ID;
+  const environment = process.env.SQUARE_ENVIRONMENT || 'sandbox';
+
+  const baseUrl = environment === 'production'
+    ? 'https://connect.squareup.com'
+    : 'https://connect.squareupsandbox.com';
+
   try {
-    const { result } = await client.paymentsApi.createPayment({
-      sourceId,
-      idempotencyKey: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      amountMoney: {
-        amount: BigInt(amountCents),
-        currency,
+    const response = await fetch(`${baseUrl}/v2/payments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'Square-Version': '2024-01-18',
       },
-      locationId: process.env.SQUARE_LOCATION_ID,
-      note: note || `CM&M Booking: ${service}`,
-      buyerEmailAddress: buyerEmail || undefined,
-      billingAddress: buyerName ? { firstName: buyerName.split(' ')[0], lastName: buyerName.split(' ').slice(1).join(' ') } : undefined,
+      body: JSON.stringify({
+        source_id: sourceId,
+        idempotency_key: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        amount_money: {
+          amount: amountCents,
+          currency,
+        },
+        location_id: locationId,
+        note: note || `CM&M Booking: ${service}`,
+        buyer_email_address: buyerEmail || undefined,
+      }),
     });
 
-    const payment = result.payment;
+    const data = await response.json();
+
+    if (!response.ok || data.errors) {
+      const message = data.errors?.[0]?.detail || 'Payment failed.';
+      console.error('[square-payment] Square error:', JSON.stringify(data.errors));
+      return { statusCode: 400, body: JSON.stringify({ error: message }) };
+    }
+
+    const payment = data.payment;
 
     return {
       statusCode: 200,
@@ -59,8 +72,8 @@ exports.handler = async (event) => {
         success: true,
         paymentId: payment.id,
         status: payment.status,
-        receiptUrl: payment.receiptUrl,
-        amountCents: Number(payment.amountMoney?.amount),
+        receiptUrl: payment.receipt_url,
+        amountCents: payment.amount_money?.amount,
         service,
         date,
         time,
@@ -68,14 +81,10 @@ exports.handler = async (event) => {
     };
 
   } catch (err) {
-    // Square SDK errors have an `errors` array
-    const squareErrors = err?.errors;
-    const message = squareErrors?.[0]?.detail || err.message || 'Payment processing failed.';
-    console.error('[square-payment] Error:', squareErrors || err.message);
-
+    console.error('[square-payment] Error:', err.message);
     return {
-      statusCode: 400,
-      body: JSON.stringify({ error: message }),
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Payment processing failed. Please try again.' }),
     };
   }
 };

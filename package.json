@@ -1,8 +1,5 @@
 {
   "name": "cmm-financial-site",
   "version": "1.0.0",
-  "description": "CM&M Financial Education Consulting",
-  "dependencies": {
-    "square": "^43.0.0"
-  }
+  "description": "CM&M Financial Education Consulting"
 }
