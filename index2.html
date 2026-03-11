@@ -1707,8 +1707,8 @@
           <input type="hidden" name="source" value="Newsletter CTA (Homepage — Bottom Section)" />
           <p style="display:none;"><label>Don't fill this out: <input name="bot-field" /></label></p>
           <div class="newsletter-form">
-            <input type="email" name="email" id="newsletterEmail" placeholder="Enter your email address">
-            <button type="button" id="newsletterBtn" onclick="handleNewsletterSubmit(event)">Subscribe</button>
+            <input type="email" name="email" id="newsletterEmail" placeholder="Enter your email address" required>
+            <button type="submit" id="newsletterBtn">Subscribe</button>
           </div>
           <div id="newsletter-error" style="display:none; color:#c0392b; font-size:13px; margin-top:8px;"></div>
           <div id="newsletter-success" style="display:none; color:#48BB78; font-size:14px; margin-top:12px; font-weight:600;">✓ You're in! Check your inbox for your 10% discount.</div>
