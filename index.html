@@ -1024,8 +1024,6 @@
     overflow: hidden;
     box-shadow: 0 40px 100px rgba(0,0,0,0.55);
     width: 100%; max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
     animation: scaleIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;
   }
   .modal-header {
@@ -1078,9 +1076,9 @@
   }
   .modal-sub { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 300; }
 
-  .modal-body { padding: 28px 32px 32px; }
+  .modal-body { padding: 20px 32px 24px; }
   .modal-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-  .modal-form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .modal-form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
   .modal-form-label {
     font-size: 12px; font-weight: 600;
     color: var(--text-dark);
@@ -1111,7 +1109,7 @@
     background-color: var(--cream);
     padding-right: 40px; cursor: pointer;
   }
-  .modal-textarea { resize: none; height: 80px; }
+  .modal-textarea { resize: none; height: 60px; }
   .modal-submit-btn {
     width: 100%; margin-top: 18px;
     padding: 17px 32px;
@@ -1178,7 +1176,7 @@
 <body>
 
 <!-- ─── LEAD GEN MODAL ─── -->
-<div class="modal-overlay" id="leadModal">
+<div class="modal-overlay hidden" id="leadModal">
   <div class="modal-card">
 
     <!-- Success state -->
@@ -1801,6 +1799,11 @@
 
 <script>
   // ─── MODAL LOGIC ───
+  // Show modal after 4 second delay
+  setTimeout(function() {
+    document.getElementById('leadModal').classList.remove('hidden');
+  }, 4000);
+
   function closeModal() {
     document.getElementById('leadModal').classList.add('hidden');
   }
