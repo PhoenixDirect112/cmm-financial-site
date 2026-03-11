@@ -730,7 +730,7 @@
           <p class="service-section-title">💼 One-on-One Coaching</p>
           <div class="service-options">
 
-            <label class="service-option" onclick="selectService(this, 'Plan 1 — Foundation Plan', 390)">
+            <label class="service-option" onclick="selectService(this, 'Plan 1 — Foundation Plan', 390, 110)">
               <input type="radio" name="service" value="foundation">
               <div class="service-radio"></div>
               <div class="service-icon-wrap">🏦</div>
@@ -741,7 +741,7 @@
               <div class="service-price">$390<span>/ session</span></div>
             </label>
 
-            <label class="service-option featured-option" onclick="selectService(this, 'Plan 2 — Growth Package', 695)">
+            <label class="service-option featured-option" onclick="selectService(this, 'Plan 2 — Growth Package', 695, 110)">
               <input type="radio" name="service" value="growth">
               <div class="service-radio"></div>
               <div class="service-icon-wrap">💎</div>
@@ -752,7 +752,7 @@
               <div class="service-price">$695<span>/ session</span></div>
             </label>
 
-            <label class="service-option" onclick="selectService(this, 'Plan 3 — Legacy Lane', 1975)">
+            <label class="service-option" onclick="selectService(this, 'Plan 3 — Legacy Lane', 1975, 60)">
               <input type="radio" name="service" value="legacy">
               <div class="service-radio"></div>
               <div class="service-icon-wrap">🏛️</div>
@@ -769,7 +769,7 @@
           <p class="service-section-title" style="margin-top:28px;">🎓 Students (Grades 9–12)</p>
           <div class="service-options">
 
-            <label class="service-option" onclick="selectService(this, 'Student Single Workshop', 600)">
+            <label class="service-option" onclick="selectService(this, 'Student Single Workshop', 600, 110)">
               <input type="radio" name="service" value="student-single">
               <div class="service-radio"></div>
               <div class="service-icon-wrap">🎓</div>
@@ -780,7 +780,7 @@
               <div class="service-price">$600<span>/ workshop</span></div>
             </label>
 
-            <label class="service-option" onclick="selectService(this, 'Student Half-Day Workshop', 2250)">
+            <label class="service-option" onclick="selectService(this, 'Student Half-Day Workshop', 2250, 300)">
               <input type="radio" name="service" value="student-halfday">
               <div class="service-radio"></div>
               <div class="service-icon-wrap">📚</div>
@@ -797,7 +797,7 @@
           <p class="service-section-title" style="margin-top:28px;">⛪ Religious Groups</p>
           <div class="service-options">
 
-            <label class="service-option" onclick="selectService(this, '\"The Good Steward\" Group Session', 85)">
+            <label class="service-option" onclick="selectService(this, '\"The Good Steward\" Group Session', 85, 300)">
               <input type="radio" name="service" value="group">
               <div class="service-radio"></div>
               <div class="service-icon-wrap">⛪</div>
@@ -1106,6 +1106,7 @@
   const state = {
     service: null,
     price: 0,
+    duration: 60,
     date: null,
     time: null,
     currentStep: 1,
@@ -1149,11 +1150,12 @@
   }
 
   // ─── SERVICE SELECTION ───
-  function selectService(el, name, price) {
+  function selectService(el, name, price, duration) {
     document.querySelectorAll('.service-option').forEach(o => o.classList.remove('selected'));
     el.classList.add('selected');
     state.service = name;
     state.price = price;
+    state.duration = duration || 60;
     document.getElementById('sum-service').textContent = name;
     document.getElementById('sum-price').textContent = '$' + price.toLocaleString();
     document.getElementById('sum-total').textContent = '$' + price.toLocaleString();
@@ -1254,24 +1256,53 @@
     buildTimeSlots();
   }
 
+  // Helper: convert "9:00 AM" to total minutes from midnight
+  function slotToMins(t) {
+    const [time, period] = t.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+
   function buildTimeSlots() {
     const container = document.getElementById('time-slots');
     container.innerHTML = '';
     const now = new Date();
     const isToday = state.date && state.date.toDateString() === now.toDateString();
+    const duration = state.duration || 60;
+    const lastSlotMins = slotToMins('4:30 PM'); // last available start = 4:30 PM
+
+    // Build a set of all minutes blocked by existing Outlook bookings
+    // Each busy slot blocks from its start through its end (we use 60min blocks from Outlook)
+    const busyMinutes = new Set();
+    (state.busySlots || []).forEach(bs => {
+      const start = slotToMins(bs);
+      for (let m = start; m < start + 60; m += 30) busyMinutes.add(m);
+    });
+
     TIME_SLOTS.forEach(t => {
       const slot = document.createElement('div'); slot.className = 'time-slot'; slot.textContent = t;
-      // FIX 1: Grey out past times when today is selected
+      const slotMins = slotToMins(t);
+
+      // Grey out past times when today is selected
       if (isToday) {
-        const [time, period] = t.split(' ');
-        let [hours, minutes] = time.split(':').map(Number);
-        if (period === 'PM' && hours !== 12) hours += 12;
-        if (period === 'AM' && hours === 12) hours = 0;
-        const slotTime = new Date(); slotTime.setHours(hours, minutes, 0, 0);
+        const slotTime = new Date(); slotTime.setHours(Math.floor(slotMins/60), slotMins%60, 0, 0);
         if (slotTime <= now) { slot.classList.add('booked'); slot.title = 'Time has passed'; container.appendChild(slot); return; }
       }
-      // FIX 3: Grey out slots already booked in Outlook
-      if ((state.busySlots || []).includes(t)) {
+
+      // Grey out if session would run past 5:00 PM (last end time)
+      if (slotMins + duration > 17 * 60) {
+        slot.classList.add('booked'); slot.title = 'Not enough time remaining';
+        container.appendChild(slot); return;
+      }
+
+      // Grey out if this slot or any slot the session would cover is busy in Outlook
+      let overlapsOutlook = false;
+      for (let m = slotMins; m < slotMins + duration; m += 30) {
+        if (busyMinutes.has(m)) { overlapsOutlook = true; break; }
+      }
+      if (overlapsOutlook) {
         slot.classList.add('booked'); slot.title = 'Already booked';
       } else {
         slot.onclick = () => selectTime(slot, t);
@@ -1396,7 +1427,7 @@
           service: state.service,
           date: `${yyyy}-${mm}-${dd}`,
           time: state.time,
-          durationMinutes: 60
+          durationMinutes: state.duration || 60
         })
       }).catch(e => console.warn('Calendar event creation failed (non-critical):', e));
     }
