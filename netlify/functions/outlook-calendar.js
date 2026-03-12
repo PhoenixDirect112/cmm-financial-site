@@ -53,8 +53,7 @@ exports.handler = async (event) => {
       '11:00 AM','11:30 AM','12:00 PM','12:30 PM',
       '1:00 PM','1:30 PM','2:00 PM','2:30 PM',
       '3:00 PM','3:30 PM','4:00 PM','4:30 PM',
-      '5:00 PM','5:30 PM','6:00 PM','6:30 PM',
-      '7:00 PM','7:30 PM'
+      '5:00 PM','5:30 PM'
     ];
 
     // Helper: parse "9:00 AM" → { hours, minutes } in 24hr
@@ -89,7 +88,7 @@ exports.handler = async (event) => {
         `https://graph.microsoft.com/v1.0/users/${COACH_EMAIL}/calendarView` +
         `?startDateTime=${startUtc}&endDateTime=${endUtc}` +
         `&$select=subject,start,end,isAllDay,showAs,isCancelled`,
-        { headers: graphHeaders }
+        { headers: { ...graphHeaders, 'Prefer': 'outlook.timezone="UTC"' } }
       );
       const eventsData = await eventsRes.json();
 
@@ -135,11 +134,13 @@ exports.handler = async (event) => {
       const offsetHours = isCDT ? 5 : 6;
 
       // Pre-parse all Outlook events into UTC start/end once
+      // The Prefer: outlook.timezone="UTC" header ensures all times come back in UTC.
+      // Graph returns datetimes without a Z suffix, so we append it for correct JS parsing.
       const parsedEvents = events.map(ev => {
         let evStartStr = ev.start.dateTime;
         let evEndStr   = ev.end.dateTime;
-        if (ev.start.timeZone === 'UTC' && !evStartStr.endsWith('Z')) evStartStr += 'Z';
-        if (ev.end.timeZone   === 'UTC' && !evEndStr.endsWith('Z'))   evEndStr   += 'Z';
+        if (!evStartStr.endsWith('Z')) evStartStr += 'Z';
+        if (!evEndStr.endsWith('Z'))   evEndStr   += 'Z';
         return { start: new Date(evStartStr), end: new Date(evEndStr) };
       });
 
@@ -219,15 +220,18 @@ exports.handler = async (event) => {
       const checkEnd   = slotEndUTC.toISOString();
       const conflictRes = await fetch(
         `https://graph.microsoft.com/v1.0/users/${COACH_EMAIL}/calendarView` +
-        `?startDateTime=${checkStart}&endDateTime=${checkEnd}&$select=id,start,end`,
-        { headers: graphHeaders }
+        `?startDateTime=${checkStart}&endDateTime=${checkEnd}&$select=id,start,end,isAllDay,showAs,isCancelled`,
+        { headers: { ...graphHeaders, 'Prefer': 'outlook.timezone="UTC"' } }
       );
       const conflictData = await conflictRes.json();
       const conflicts = (conflictData.value || []).filter(ev => {
+        // Skip all-day, cancelled, free/tentative — same logic as availability check
+        if (ev.isAllDay || ev.isCancelled) return false;
+        if (ev.showAs === 'free' || ev.showAs === 'tentative') return false;
         let evS = ev.start.dateTime;
         let evE = ev.end.dateTime;
-        if (ev.start.timeZone === 'UTC' && !evS.endsWith('Z')) evS += 'Z';
-        if (ev.end.timeZone   === 'UTC' && !evE.endsWith('Z')) evE += 'Z';
+        if (!evS.endsWith('Z')) evS += 'Z';
+        if (!evE.endsWith('Z')) evE += 'Z';
         return new Date(evS) < slotEndUTC && new Date(evE) > slotStartUTC;
       });
 
