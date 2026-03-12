@@ -1298,20 +1298,10 @@
       // No end-of-day cutoff — 5:30 PM is the last start time (enforced by TIME_SLOTS),
       // but sessions are allowed to run past that as long as needed.
 
-      // Grey out if ANY 30-min chunk this session covers is busy in Outlook
-      let overlapsOutlook = false;
-      for (let m = slotMins; m < slotMins + duration; m += 30) {
-        // Guard: if duration pushes past the 24hr mark, skip (shouldn't happen but be safe)
-        if (m >= 24 * 60) { overlapsOutlook = true; break; }
-        // Convert back to slot string to check against busySet
-        const h24 = Math.floor(m / 60);
-        const mins = m % 60;
-        const period = h24 >= 12 ? 'PM' : 'AM';
-        const h12 = h24 === 0 ? 12 : (h24 > 12 ? h24 - 12 : h24);
-        const slotStr = h12 + ':' + String(mins).padStart(2,'0') + ' ' + period;
-        if (busySet.has(slotStr)) { overlapsOutlook = true; break; }
-      }
-      if (overlapsOutlook) {
+      // Grey out only if THIS specific 30-min start slot is marked busy by Outlook.
+      // We do NOT block a slot just because the session duration would overlap with
+      // a later busy period — only the start time matters for availability.
+      if (busySet.has(t)) {
         slot.classList.add('booked'); slot.title = 'Already booked';
       } else {
         slot.onclick = () => selectTime(slot, t);
