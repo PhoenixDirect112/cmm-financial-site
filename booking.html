@@ -1213,9 +1213,8 @@
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = document.createElement('div'); cell.className = 'cal-day'; cell.textContent = d;
       const cellDate = new Date(state.currentYear, state.currentMonth, d);
-      const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
       const isPast = cellDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      if (isPast || isWeekend) { cell.classList.add('disabled'); }
+      if (isPast) { cell.classList.add('disabled'); }
       else {
         if (cellDate.toDateString() === today.toDateString()) cell.classList.add('today');
         cell.onclick = () => selectDate(cell, d);
