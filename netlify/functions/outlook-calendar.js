@@ -87,7 +87,8 @@ exports.handler = async (event) => {
 
       const eventsRes = await fetch(
         `https://graph.microsoft.com/v1.0/users/${COACH_EMAIL}/calendarView` +
-        `?startDateTime=${startUtc}&endDateTime=${endUtc}&$select=subject,start,end`,
+        `?startDateTime=${startUtc}&endDateTime=${endUtc}` +
+        `&$select=subject,start,end,isAllDay,showAs,isCancelled`,
         { headers: graphHeaders }
       );
       const eventsData = await eventsRes.json();
@@ -97,8 +98,18 @@ exports.handler = async (event) => {
         return { statusCode: 500, headers, body: JSON.stringify({ error: eventsData.error.message }) };
       }
 
-      const events = eventsData.value || [];
-      console.log(`Found ${events.length} events on ${date}`);
+      // Filter out events that should NOT block time slots:
+      //   - All-day events (holidays, birthdays, DST reminders, OOO markers)
+      //   - Cancelled events
+      //   - Events marked as "free" or "tentative" (only "busy"/"oof"/"workingElsewhere" block)
+      const rawEvents = eventsData.value || [];
+      const events = rawEvents.filter(ev => {
+        if (ev.isAllDay) return false;
+        if (ev.isCancelled) return false;
+        if (ev.showAs === 'free' || ev.showAs === 'tentative') return false;
+        return true;
+      });
+      console.log(`Found ${rawEvents.length} total events, ${events.length} blocking events on ${date}`);
 
       // Detect CDT vs CST using proper US DST rules:
       //   CDT starts: 2nd Sunday of March at 2:00 AM local (08:00 UTC)
