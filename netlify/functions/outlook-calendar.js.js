@@ -139,12 +139,17 @@ exports.handler = async (event) => {
       const parsedEvents = events.map(ev => {
         let evStartStr = ev.start.dateTime;
         let evEndStr   = ev.end.dateTime;
+        console.log(`  Raw event: "${ev.subject}" | start: ${evStartStr} (tz: ${ev.start.timeZone}) | end: ${evEndStr} (tz: ${ev.end.timeZone}) | showAs: ${ev.showAs}`);
         if (!evStartStr.endsWith('Z')) evStartStr += 'Z';
         if (!evEndStr.endsWith('Z'))   evEndStr   += 'Z';
-        return { start: new Date(evStartStr), end: new Date(evEndStr) };
+        const parsed = { start: new Date(evStartStr), end: new Date(evEndStr) };
+        console.log(`  Parsed UTC: ${parsed.start.toISOString()} → ${parsed.end.toISOString()}`);
+        return parsed;
       });
 
       const busySlots = [];
+
+      console.log(`Offset: CDT=${isCDT}, offsetHours=${offsetHours}`);
 
       // Check every 30-min slot — mark busy if ANY overlap with an Outlook event
       TIME_SLOTS.forEach(slot => {
@@ -157,7 +162,10 @@ exports.handler = async (event) => {
         const slotEndUTC = new Date(slotStartUTC.getTime() + 30 * 60 * 1000);
 
         const isBusy = parsedEvents.some(ev => ev.start < slotEndUTC && ev.end > slotStartUTC);
-        if (isBusy) busySlots.push(slot);
+        if (isBusy) {
+          console.log(`  BUSY: ${slot} (${slotStartUTC.toISOString()} – ${slotEndUTC.toISOString()})`);
+          busySlots.push(slot);
+        }
       });
 
       console.log('Busy slots:', busySlots);
