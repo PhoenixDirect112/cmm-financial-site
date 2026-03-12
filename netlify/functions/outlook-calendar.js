@@ -77,10 +77,13 @@ exports.handler = async (event) => {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing date parameter.' }) };
       }
 
-      // Wide UTC window to catch events stored in any timezone
+      // Wide UTC window — slots up to 7:30 PM CDT = 00:30 UTC next day,
+      // plus buffer for CST (UTC-6). Use 06:00 UTC next day to be safe.
       const startUtc = `${date}T00:00:00Z`;
-      const endUtc   = `${date}T23:59:59Z`;
-      // Note: calendarView automatically handles timezone conversion server-side
+      const nextDate = new Date(date + 'T12:00:00Z');
+      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+      const nd = nextDate.toISOString().slice(0, 10);
+      const endUtc = `${nd}T06:00:00Z`;
 
       const eventsRes = await fetch(
         `https://graph.microsoft.com/v1.0/users/${COACH_EMAIL}/calendarView` +
@@ -97,11 +100,27 @@ exports.handler = async (event) => {
       const events = eventsData.value || [];
       console.log(`Found ${events.length} events on ${date}`);
 
-      // Detect CDT vs CST for correct UTC offset
+      // Detect CDT vs CST using proper US DST rules:
+      //   CDT starts: 2nd Sunday of March at 2:00 AM local (08:00 UTC)
+      //   CST starts: 1st Sunday of November at 2:00 AM local (07:00 UTC)
       const slotDate = new Date(date + 'T12:00:00Z');
-      const month = slotDate.getUTCMonth();
-      const day   = slotDate.getUTCDate();
-      const isCDT = (month > 2 && month < 10) || (month === 2 && day >= 8) || (month === 10 && day < 1);
+      const year = slotDate.getUTCFullYear();
+
+      function getNthSunday(yr, month, n) {
+        // month is 0-indexed; returns the day-of-month of the nth Sunday
+        const first = new Date(Date.UTC(yr, month, 1));
+        const firstDow = first.getUTCDay(); // 0=Sun
+        const firstSunday = firstDow === 0 ? 1 : 8 - firstDow;
+        return firstSunday + (n - 1) * 7;
+      }
+
+      const dstStartDay = getNthSunday(year, 2, 2);  // 2nd Sunday of March
+      const dstEndDay   = getNthSunday(year, 10, 1);  // 1st Sunday of November
+      // DST transition moments in UTC
+      const dstStartUTC = new Date(Date.UTC(year, 2, dstStartDay, 8, 0, 0));  // 2 AM CST = 08:00 UTC
+      const dstEndUTC   = new Date(Date.UTC(year, 10, dstEndDay, 7, 0, 0));   // 2 AM CDT = 07:00 UTC
+
+      const isCDT = slotDate >= dstStartUTC && slotDate < dstEndUTC;
       const offsetHours = isCDT ? 5 : 6;
 
       // Pre-parse all Outlook events into UTC start/end once
@@ -149,9 +168,66 @@ exports.handler = async (event) => {
 
       // FIX: Pure arithmetic for end time — no Date object timezone confusion
       const endTotalMins = hours * 60 + minutes + durationMinutes;
+
+      // Guard: reject bookings that would overflow past midnight
+      if (endTotalMins >= 24 * 60) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Session would extend past midnight. Please choose an earlier time.' }) };
+      }
+
       const endISO = `${date}T${pad(Math.floor(endTotalMins / 60))}:${pad(endTotalMins % 60)}:00`;
 
       console.log(`Creating event: ${startISO} → ${endISO} America/Chicago`);
+
+      // ─── DOUBLE-BOOKING GUARD: re-check availability before creating ───
+      // Compute the same DST offset used by the GET handler
+      const bookDate = new Date(date + 'T12:00:00Z');
+      const bookYear = bookDate.getUTCFullYear();
+
+      function getNthSundayBook(yr, mo, n) {
+        const first = new Date(Date.UTC(yr, mo, 1));
+        const firstDow = first.getUTCDay();
+        const firstSun = firstDow === 0 ? 1 : 8 - firstDow;
+        return firstSun + (n - 1) * 7;
+      }
+      const dstStartDayB = getNthSundayBook(bookYear, 2, 2);
+      const dstEndDayB   = getNthSundayBook(bookYear, 10, 1);
+      const dstStartUTCB = new Date(Date.UTC(bookYear, 2, dstStartDayB, 8, 0, 0));
+      const dstEndUTCB   = new Date(Date.UTC(bookYear, 10, dstEndDayB, 7, 0, 0));
+      const isCDTBook = bookDate >= dstStartUTCB && bookDate < dstEndUTCB;
+      const offsetBook = isCDTBook ? 5 : 6;
+
+      // Build UTC window for the slot's full duration
+      const slotStartUTC = new Date(Date.UTC(
+        bookDate.getUTCFullYear(), bookDate.getUTCMonth(), bookDate.getUTCDate(),
+        hours + offsetBook, minutes, 0
+      ));
+      const slotEndUTC = new Date(slotStartUTC.getTime() + durationMinutes * 60 * 1000);
+
+      // Query Outlook for conflicting events
+      const checkStart = slotStartUTC.toISOString();
+      const checkEnd   = slotEndUTC.toISOString();
+      const conflictRes = await fetch(
+        `https://graph.microsoft.com/v1.0/users/${COACH_EMAIL}/calendarView` +
+        `?startDateTime=${checkStart}&endDateTime=${checkEnd}&$select=id,start,end`,
+        { headers: graphHeaders }
+      );
+      const conflictData = await conflictRes.json();
+      const conflicts = (conflictData.value || []).filter(ev => {
+        let evS = ev.start.dateTime;
+        let evE = ev.end.dateTime;
+        if (ev.start.timeZone === 'UTC' && !evS.endsWith('Z')) evS += 'Z';
+        if (ev.end.timeZone   === 'UTC' && !evE.endsWith('Z')) evE += 'Z';
+        return new Date(evS) < slotEndUTC && new Date(evE) > slotStartUTC;
+      });
+
+      if (conflicts.length > 0) {
+        console.warn(`Double-booking prevented: ${conflicts.length} conflict(s) for ${date} ${time}`);
+        return {
+          statusCode: 409, headers,
+          body: JSON.stringify({ error: 'This time slot was just booked by someone else. Please choose another time.' })
+        };
+      }
+      // ─── END DOUBLE-BOOKING GUARD ───
 
       const eventPayload = {
         subject: `CM&M Booking: ${service} — ${clientName}`,

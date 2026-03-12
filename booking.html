@@ -1306,11 +1306,13 @@
       // Grey out if ANY 30-min chunk this session covers is busy in Outlook
       let overlapsOutlook = false;
       for (let m = slotMins; m < slotMins + duration; m += 30) {
+        // Guard: if duration pushes past the 24hr mark, skip (shouldn't happen but be safe)
+        if (m >= 24 * 60) { overlapsOutlook = true; break; }
         // Convert back to slot string to check against busySet
         const h24 = Math.floor(m / 60);
         const mins = m % 60;
         const period = h24 >= 12 ? 'PM' : 'AM';
-        const h12 = h24 > 12 ? h24 - 12 : (h24 === 0 ? 12 : h24);
+        const h12 = h24 === 0 ? 12 : (h24 > 12 ? h24 - 12 : h24);
         const slotStr = h12 + ':' + String(mins).padStart(2,'0') + ' ' + period;
         if (busySet.has(slotStr)) { overlapsOutlook = true; break; }
       }
@@ -1444,7 +1446,11 @@
           })
         });
         const calData = await calRes.json();
-        if (!calRes.ok || calData.error) {
+        if (calRes.status === 409) {
+          // Slot was taken between selection and payment — alert user
+          alert('This time slot was just booked by someone else. Your payment was processed but we will need to reschedule. Please contact us or book another slot.');
+          console.error('Double-booking conflict:', calData.error);
+        } else if (!calRes.ok || calData.error) {
           console.error('Calendar booking failed:', calData.error);
         }
       } catch (e) {
