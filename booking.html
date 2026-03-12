@@ -1123,8 +1123,7 @@
     '11:00 AM','11:30 AM','12:00 PM','12:30 PM',
     '1:00 PM','1:30 PM','2:00 PM','2:30 PM',
     '3:00 PM','3:30 PM','4:00 PM','4:30 PM',
-    '5:00 PM','5:30 PM','6:00 PM','6:30 PM',
-    '7:00 PM','7:30 PM'
+    '5:00 PM','5:30 PM'
   ];
 
   let squareCard = null;
@@ -1296,11 +1295,8 @@
         if (slotTime <= now) { slot.classList.add('booked'); slot.title = 'Time has passed'; container.appendChild(slot); return; }
       }
 
-      // Grey out if session would run past 8:00 PM (last end time)
-      if (slotMins + duration > 20 * 60) {
-        slot.classList.add('booked'); slot.title = 'Not enough time remaining';
-        container.appendChild(slot); return;
-      }
+      // No end-of-day cutoff — 5:30 PM is the last start time (enforced by TIME_SLOTS),
+      // but sessions are allowed to run past that as long as needed.
 
       // Grey out if ANY 30-min chunk this session covers is busy in Outlook
       let overlapsOutlook = false;
