@@ -52,7 +52,9 @@ exports.handler = async (event) => {
       '9:00 AM','9:30 AM','10:00 AM','10:30 AM',
       '11:00 AM','11:30 AM','12:00 PM','12:30 PM',
       '1:00 PM','1:30 PM','2:00 PM','2:30 PM',
-      '3:00 PM','3:30 PM','4:00 PM','4:30 PM'
+      '3:00 PM','3:30 PM','4:00 PM','4:30 PM',
+      '5:00 PM','5:30 PM','6:00 PM','6:30 PM',
+      '7:00 PM','7:30 PM'
     ];
 
     // Helper: parse "9:00 AM" → { hours, minutes } in 24hr
@@ -75,8 +77,10 @@ exports.handler = async (event) => {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing date parameter.' }) };
       }
 
+      // Wide UTC window to catch events stored in any timezone
       const startUtc = `${date}T00:00:00Z`;
       const endUtc   = `${date}T23:59:59Z`;
+      // Note: calendarView automatically handles timezone conversion server-side
 
       const eventsRes = await fetch(
         `https://graph.microsoft.com/v1.0/users/${COACH_EMAIL}/calendarView` +
@@ -100,29 +104,28 @@ exports.handler = async (event) => {
       const isCDT = (month > 2 && month < 10) || (month === 2 && day >= 8) || (month === 10 && day < 1);
       const offsetHours = isCDT ? 5 : 6;
 
+      // Pre-parse all Outlook events into UTC start/end once
+      const parsedEvents = events.map(ev => {
+        let evStartStr = ev.start.dateTime;
+        let evEndStr   = ev.end.dateTime;
+        if (ev.start.timeZone === 'UTC' && !evStartStr.endsWith('Z')) evStartStr += 'Z';
+        if (ev.end.timeZone   === 'UTC' && !evEndStr.endsWith('Z'))   evEndStr   += 'Z';
+        return { start: new Date(evStartStr), end: new Date(evEndStr) };
+      });
+
       const busySlots = [];
 
+      // Check every 30-min slot — mark busy if ANY overlap with an Outlook event
       TIME_SLOTS.forEach(slot => {
         const { hours, minutes } = parseSlot(slot);
-
-        // Convert slot local time to UTC for comparison
         const slotStartUTC = new Date(Date.UTC(
           slotDate.getUTCFullYear(), slotDate.getUTCMonth(), slotDate.getUTCDate(),
           hours + offsetHours, minutes, 0
         ));
-        // FIX: end = start + exactly 1hr in milliseconds — no timezone math
-        const slotEndUTC = new Date(slotStartUTC.getTime() + 60 * 60 * 1000);
+        // 30-min window so partial overlaps are detected
+        const slotEndUTC = new Date(slotStartUTC.getTime() + 30 * 60 * 1000);
 
-        const isBusy = events.some(ev => {
-          let evStartStr = ev.start.dateTime;
-          let evEndStr   = ev.end.dateTime;
-          if (ev.start.timeZone === 'UTC' && !evStartStr.endsWith('Z')) evStartStr += 'Z';
-          if (ev.end.timeZone   === 'UTC' && !evEndStr.endsWith('Z'))   evEndStr   += 'Z';
-          const evStart = new Date(evStartStr);
-          const evEnd   = new Date(evEndStr);
-          return evStart < slotEndUTC && evEnd > slotStartUTC;
-        });
-
+        const isBusy = parsedEvents.some(ev => ev.start < slotEndUTC && ev.end > slotStartUTC);
         if (isBusy) busySlots.push(slot);
       });
 

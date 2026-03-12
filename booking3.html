@@ -1122,9 +1122,7 @@
     '9:00 AM','9:30 AM','10:00 AM','10:30 AM',
     '11:00 AM','11:30 AM','12:00 PM','12:30 PM',
     '1:00 PM','1:30 PM','2:00 PM','2:30 PM',
-    '3:00 PM','3:30 PM','4:00 PM','4:30 PM',
-    '5:00 PM','5:30 PM','6:00 PM','6:30 PM',
-    '7:00 PM','7:30 PM'
+    '3:00 PM','3:30 PM','4:00 PM','4:30 PM'
   ];
 
   let squareCard = null;
@@ -1182,14 +1180,7 @@
     state.currentStep = n;
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    if (n === 2) {
-      buildCalendar();
-      // If date already selected, refresh time slots with new duration
-      if (state.date) {
-        document.getElementById('time-section').style.display = 'block';
-        buildTimeSlots();
-      }
-    }
+    if (n === 2) buildCalendar();
     if (n === 4 && !squareCard) initSquare();
   }
 
@@ -1284,8 +1275,15 @@
       state.date.getMonth()    === now.getMonth() &&
       state.date.getDate()     === now.getDate();
     const duration = state.duration || 60;
-    // busySlots from Outlook — each entry is a 30-min slot that is occupied
-    const busySet = new Set(state.busySlots || []);
+    const lastSlotMins = slotToMins('4:30 PM'); // last available start = 4:30 PM
+
+    // Build a set of all minutes blocked by existing Outlook bookings
+    // Each busy slot blocks from its start through its end (we use 60min blocks from Outlook)
+    const busyMinutes = new Set();
+    (state.busySlots || []).forEach(bs => {
+      const start = slotToMins(bs);
+      for (let m = start; m < start + 60; m += 30) busyMinutes.add(m);
+    });
 
     TIME_SLOTS.forEach(t => {
       const slot = document.createElement('div'); slot.className = 'time-slot'; slot.textContent = t;
@@ -1297,22 +1295,16 @@
         if (slotTime <= now) { slot.classList.add('booked'); slot.title = 'Time has passed'; container.appendChild(slot); return; }
       }
 
-      // Grey out if session would run past 8:00 PM (last end time)
-      if (slotMins + duration > 20 * 60) {
+      // Grey out if session would run past 5:00 PM (last end time)
+      if (slotMins + duration > 17 * 60) {
         slot.classList.add('booked'); slot.title = 'Not enough time remaining';
         container.appendChild(slot); return;
       }
 
-      // Grey out if ANY 30-min chunk this session covers is busy in Outlook
+      // Grey out if this slot or any slot the session would cover is busy in Outlook
       let overlapsOutlook = false;
       for (let m = slotMins; m < slotMins + duration; m += 30) {
-        // Convert back to slot string to check against busySet
-        const h24 = Math.floor(m / 60);
-        const mins = m % 60;
-        const period = h24 >= 12 ? 'PM' : 'AM';
-        const h12 = h24 > 12 ? h24 - 12 : (h24 === 0 ? 12 : h24);
-        const slotStr = h12 + ':' + String(mins).padStart(2,'0') + ' ' + period;
-        if (busySet.has(slotStr)) { overlapsOutlook = true; break; }
+        if (busyMinutes.has(m)) { overlapsOutlook = true; break; }
       }
       if (overlapsOutlook) {
         slot.classList.add('booked'); slot.title = 'Already booked';
@@ -1424,32 +1416,24 @@
     document.getElementById('conf-name').textContent = name || '—';
     document.getElementById('conf-amount').textContent = '$' + state.price.toLocaleString();
 
-    // Create Outlook calendar event
+    // Create Outlook calendar event (fire and forget — don't block the success screen)
     if (state.date && state.time) {
       const yyyy = state.date.getFullYear();
       const mm   = String(state.date.getMonth() + 1).padStart(2, '0');
       const dd   = String(state.date.getDate()).padStart(2, '0');
-      try {
-        const calRes = await fetch('/.netlify/functions/outlook-calendar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'book',
-            clientName: name,
-            clientEmail: clientEmail,
-            service: state.service,
-            date: `${yyyy}-${mm}-${dd}`,
-            time: state.time,
-            durationMinutes: state.duration || 60
-          })
-        });
-        const calData = await calRes.json();
-        if (!calRes.ok || calData.error) {
-          console.error('Calendar booking failed:', calData.error);
-        }
-      } catch (e) {
-        console.error('Calendar event creation failed:', e);
-      }
+      fetch('/.netlify/functions/outlook-calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'book',
+          clientName: name,
+          clientEmail: clientEmail,
+          service: state.service,
+          date: `${yyyy}-${mm}-${dd}`,
+          time: state.time,
+          durationMinutes: state.duration || 60
+        })
+      }).catch(e => console.warn('Calendar event creation failed (non-critical):', e));
     }
 
     document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
