@@ -1107,6 +1107,7 @@
             <div class="trust-item"><div class="trust-item-icon">📧</div>Instant email confirmation</div>
             <div class="trust-item" id="trust-reschedule"><div class="trust-item-icon">🕐</div>Reschedule up to 24 hrs before</div>
             <div class="trust-item" id="trust-location"><div class="trust-item-icon">✦</div>IAP Certified Coach · Est. Gretna, LA</div>
+            <div class="trust-item" id="trust-location-digital" style="display:none;"><div class="trust-item-icon">✦</div>IAP Certified Coach</div>
           </div>
         </div>
       </div>
@@ -1193,6 +1194,7 @@
     state.isDigital = (duration === 0);
     document.getElementById('trust-reschedule').style.display = state.isDigital ? 'none' : '';
     document.getElementById('trust-location').style.display = state.isDigital ? 'none' : '';
+    document.getElementById('trust-location-digital').style.display = state.isDigital ? '' : 'none';
     document.getElementById('sum-service').textContent = name;
     document.getElementById('sum-price').textContent = '$' + price.toLocaleString();
     document.getElementById('sum-total').textContent = '$' + price.toLocaleString();
