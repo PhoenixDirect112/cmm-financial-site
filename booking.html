@@ -831,6 +831,23 @@
 
           </div>
 
+          <!-- Section: Digital Products -->
+          <p class="service-section-title" style="margin-top:28px;">📖 Digital Products</p>
+          <div class="service-options">
+
+            <label class="service-option" onclick="selectService(this, 'Digital Wealth Play Book (eBook)', 15, 0)">
+              <input type="radio" name="service" value="ebook">
+              <div class="service-radio"></div>
+              <div class="service-icon-wrap">📖</div>
+              <div class="service-info">
+                <h4>Digital Wealth Play Book</h4>
+                <p>18-page Financial Literacy Workbook · Instant digital delivery · Covers saving, credit, investing &amp; more</p>
+              </div>
+              <div class="service-price">$15</div>
+            </label>
+
+          </div>
+
           <div class="step-actions">
             <span></span>
             <button class="btn-next" onclick="goToStep(2)" id="btn-step1">
@@ -914,7 +931,7 @@
             </div>
           </div>
           <div class="step-actions">
-            <button class="btn-back" onclick="goToStep(2)">← Back</button>
+            <button class="btn-back" onclick="goToStep(state.isDigital ? 1 : 2)">← Back</button>
             <button class="btn-next" onclick="goToStep(4)" id="btn-step3">
               Continue to Payment &nbsp;→
             </button>
@@ -1173,6 +1190,7 @@
     state.service = name;
     state.price = price;
     state.duration = duration || 60;
+    state.isDigital = (duration === 0);
     document.getElementById('sum-service').textContent = name;
     document.getElementById('sum-price').textContent = '$' + price.toLocaleString();
     document.getElementById('sum-total').textContent = '$' + price.toLocaleString();
@@ -1182,6 +1200,11 @@
   // ─── STEPS ───
   function goToStep(n) {
     if (n === 2 && !state.service) { alert('Please select a service first.'); return; }
+
+    // Skip date/time step for digital products
+    if (state.isDigital && n === 2) { n = 3; }
+    if (state.isDigital && n === 1 && state.currentStep === 3) { n = 1; }
+
     if (n === 4 && (!document.getElementById('firstName').value || !document.getElementById('email').value || !document.getElementById('phone').value)) {
       alert('Please fill in all required fields.'); return;
     }
