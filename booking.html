@@ -985,7 +985,7 @@
               <div style="background:white;border-radius:12px;padding:20px 24px;border:1px solid var(--border);margin-bottom:16px;">
                 <p style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text-light);font-weight:600;margin-bottom:8px;">Send Payment To</p>
                 <p style="font-size:18px;font-weight:700;color:#6B2D8B;">📱 504-638-1670</p>
-                <p style="font-size:16px;font-weight:600;color:#6B2D8B;margin-top:6px;">✉️ Mpounds1272@att.net</p>
+                <p style="font-size:16px;font-weight:600;color:#6B2D8B;margin-top:6px;">✉️ <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="db96abb4aeb5bfa8eae9ece99bbaafaff5b5beaf">[email&#160;protected]</a></p>
                 <p style="font-size:13px;color:var(--text-body);margin-top:4px;">Registered under <strong>Matecha S Clark</strong></p>
               </div>
               <div style="background:rgba(107,45,139,0.06);border-radius:10px;padding:14px 18px;">
@@ -1109,24 +1109,18 @@
 </footer>
 
 <!-- Square Web Payments SDK -->
-<script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://web.squarecdn.com/v1/square.js"></script>
 <script>
   // ════════════════════════════════════════════════════════
-  // SQUARE CONFIG — replace with your real keys from
-  // developer.squareup.com → Applications → your app
+  // SQUARE CONFIG — PRODUCTION
   // ════════════════════════════════════════════════════════
-  const SQUARE_APP_ID      = 'sandbox-sq0idb-F90fp7Y5makk3RPFcn-aNA';
-  const SQUARE_LOCATION_ID = 'LWS1Q9EMDWXN7';
+  const SQUARE_APP_ID      = 'sq0idp-kDghK7BU-ZIyniWJgrsGIA';
+  const SQUARE_LOCATION_ID = '4N9KCV9K0W02C';
   //
-  // TO GO LIVE:
-  // 1. Change the <script src> above to: https://web.squarecdn.com/v1/square.js
-  // 2. Replace SQUARE_APP_ID with your PRODUCTION Application ID
-  // 3. Replace SQUARE_LOCATION_ID with your PRODUCTION Location ID
-  // 4. Set SQUARE_ACCESS_TOKEN + SQUARE_LOCATION_ID in Netlify env vars
-  // 5. Set SQUARE_ENVIRONMENT=production in Netlify env vars
-  // For production, change the script src above to:
-  // https://web.squarecdn.com/v1/square.js
-  // and update APP_ID / LOCATION_ID to your production values
+  // REMINDER: Make sure these Netlify env vars are also set to production:
+  // - SQUARE_ACCESS_TOKEN  → production access token from Square dashboard
+  // - SQUARE_LOCATION_ID   → 4N9KCV9K0W02C
+  // - SQUARE_ENVIRONMENT   → production
 
   // ─── STATE ───
   const state = {
@@ -1483,14 +1477,4 @@
     const params = new URLSearchParams(window.location.search);
     const svc = params.get('service');
     if (svc) {
-      const option = document.querySelector(`.service-option input[value="${svc}"]`);
-      if (option) {
-        const label = option.closest('.service-option');
-        label.click();
-        label.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  })();
-</script>
-</body>
-</html>
+      const option = document.querySelector(`.service-option input[value="$
