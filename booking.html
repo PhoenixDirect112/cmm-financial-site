@@ -1472,9 +1472,4 @@
   // ─── INIT ───
   buildCalendar();
 
-  // Auto-select service from URL parameter (e.g. ?service=momoney)
-  (function() {
-    const params = new URLSearchParams(window.location.search);
-    const svc = params.get('service');
-    if (svc) {
-      const option = document.querySelector(`.service-option input[value="$
+  // Auto-select service from URL parameter (e.
