@@ -10,26 +10,8 @@
   for = "/*"
 
   [headers.values]
-    # HSTS — enforce HTTPS
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-
-    # Content Security Policy — whitelists approved sources
-    # - script-src: allows inline scripts + Square SDK + Cloudflare
-    # - style-src: allows inline styles + Google Fonts
-    # - font-src: Google Fonts
-    # - img-src: allows self, data URIs (base64 headshot), and HTTPS images
-    # - connect-src: allows Netlify functions, Square payments API, Microsoft Graph (Outlook calendar)
-    # - frame-src: Square card form renders in an iframe
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://web.squarecdn.com https://sandbox.web.squarecdn.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.squareup.com https://*.square.com https://pds.squareup.com https://graph.microsoft.com; frame-src https://*.squareup.com https://*.square.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
-
-    # Prevents clickjacking
     X-Frame-Options = "SAMEORIGIN"
-
-    # Stops MIME-type sniffing
     X-Content-Type-Options = "nosniff"
-
-    # Controls referrer info
     Referrer-Policy = "strict-origin-when-cross-origin"
-
-    # Restricts browser feature access — allow payment for Square
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()"
