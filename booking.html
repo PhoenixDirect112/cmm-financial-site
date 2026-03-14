@@ -1063,8 +1063,8 @@
       <!-- SUCCESS -->
       <div class="panel success-panel" id="success">
         <div class="success-icon">✓</div>
-        <h2>You're Booked!</h2>
-        <p>Your session with Coach Mo Pounds has been confirmed. A confirmation email has been sent to your inbox.</p>
+        <h2 id="success-heading">You're Booked!</h2>
+        <p id="success-message">Your session with Coach Mo Pounds has been confirmed. A confirmation email has been sent to your inbox.</p>
         <div class="confirmation-box">
           <h4>Booking Confirmation</h4>
           <div class="conf-item"><span class="conf-label">Service</span><span class="conf-value" id="conf-service">—</span></div>
@@ -1498,6 +1498,20 @@
 
     document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.step').forEach(s => s.classList.add('completed'));
+
+    // Customize success screen for eBook vs regular booking
+    if (state.isDigital) {
+      document.getElementById('success-heading').textContent = 'E-book Order Confirmation!';
+      document.getElementById('success-message').textContent = 'You will receive your e-book within 24 hours.';
+      document.getElementById('conf-date').closest('.conf-item').style.display = 'none';
+      document.getElementById('conf-time').closest('.conf-item').style.display = 'none';
+    } else {
+      document.getElementById('success-heading').textContent = "You're Booked!";
+      document.getElementById('success-message').textContent = 'Your session with Coach Mo Pounds has been confirmed. A confirmation email has been sent to your inbox.';
+      document.getElementById('conf-date').closest('.conf-item').style.display = '';
+      document.getElementById('conf-time').closest('.conf-item').style.display = '';
+    }
+
     document.getElementById('success').classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
