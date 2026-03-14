@@ -666,6 +666,19 @@
 </head>
 <body>
 
+<!-- Hidden Netlify form for booking submissions -->
+<form name="booking-submissions" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="text" name="service">
+  <input type="text" name="date">
+  <input type="text" name="time">
+  <input type="text" name="name">
+  <input type="email" name="email">
+  <input type="tel" name="phone">
+  <input type="text" name="amount">
+  <input type="text" name="payment-method">
+  <textarea name="notes"></textarea>
+</form>
+
 <!-- TOP BAR -->
 <div class="topbar">
   <span>📞 <strong>504.638.1670</strong> &nbsp;·&nbsp; 504.434.2272 &nbsp;·&nbsp; <strong>IAP Certified Coach</strong></span>
@@ -1487,6 +1500,24 @@
     document.querySelectorAll('.step').forEach(s => s.classList.add('completed'));
     document.getElementById('success').classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Submit booking details to Netlify Forms
+    try {
+      const formData = new FormData();
+      formData.append('form-name', 'booking-submissions');
+      formData.append('service', state.service || '—');
+      formData.append('date', dateStr || '—');
+      formData.append('time', state.time || '—');
+      formData.append('name', name || '—');
+      formData.append('email', clientEmail || '—');
+      formData.append('phone', document.getElementById('phone').value || '—');
+      formData.append('amount', '$' + state.price.toLocaleString());
+      formData.append('payment-method', state.paymentMethod || '—');
+      formData.append('notes', document.getElementById('notes').value || '—');
+      await fetch('/', { method: 'POST', body: formData });
+    } catch (e) {
+      console.error('Netlify form submission failed:', e);
+    }
   }
 
   // ─── INIT ───
