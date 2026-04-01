@@ -1362,14 +1362,8 @@
       // No end-of-day cutoff — 5:30 PM is the last start time (enforced by TIME_SLOTS),
       // but sessions are allowed to run past that as long as needed.
 
-      // Grey out only if THIS specific 30-min start slot is marked busy by Outlook.
-      // We do NOT block a slot just because the session duration would overlap with
-      // a later busy period — only the start time matters for availability.
-      if (busySet.has(t)) {
-        slot.classList.add('booked'); slot.title = 'Already booked';
-      } else {
-        slot.onclick = () => selectTime(slot, t);
-      }
+      // Multiple bookings allowed per time slot — no busy check
+      slot.onclick = () => selectTime(slot, t);
       container.appendChild(slot);
     });
   }
